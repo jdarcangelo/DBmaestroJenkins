@@ -62,3 +62,11 @@ def prepPackageFromGitCommit() {
 		new File("${version_dir}\\package.json").write(manifest.toPrettyString())
 	}
 }
+
+def createPackage() {
+	bat "java -jar \"${automation_jar_path}\" -Package -ProjectName ${project_name} -IgnoreScriptWarnings y -AuthType ${auth_type} -Server ${dbm_address} -UserName ${user_name} -Password ${auth_token}"
+}
+
+def upgradeReleaseSource() {
+	bat "java -jar ${automation_jar_path} -Upgrade -ProjectName ${project_name} -EnvName ${rs_environment_name} -PackageName V.gitcommit.${env.BUILD_NUMBER} -Server ${dbm_address} -AuthType ${auth_type} -UserName ${user_name} -Password ${auth_token}"
+}
