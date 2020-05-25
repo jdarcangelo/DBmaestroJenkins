@@ -4,31 +4,7 @@ import java.io.*
 import java.nio.file.*
 
 @groovy.transform.Field
-def automation_jar_path = "C:\\apps\\DBmaestro\\TeamWork\\TeamWorkOracleServer\\Automation\\DBmaestroAgent.jar"
-
-@groovy.transform.Field
-def project_name = "HR_BYTASK"
-
-@groovy.transform.Field
-def rs_environment_name = "\"Release Source\""
-
-@groovy.transform.Field
-def auth_type = "DBmaestroAccount"
-
-@groovy.transform.Field
-def user_name = "peretzr@dbmaestro.com"
-
-@groovy.transform.Field
-def auth_token = "vVk9JtrvhhhVNHxXraTthTEtknQHCjTF"
-
-@groovy.transform.Field
-def dbm_address = "localhost"
-
-@groovy.transform.Field
-def autopackage_dir = "C:\\apps\\DBmaestro\\Scripts\\TRAIN\\HR_BYTASK\\AUTO_PACKAGE"
-
-@groovy.transform.Field
-def rs_schema_name = "HR_BYTASK_RS"
+def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: ""]
 
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
@@ -46,8 +22,8 @@ def prepPackageFromGitCommit() {
 	
 	if (scriptsForPackage.size() > 0) {
 		def version = "V.gitcommit.${env.BUILD_NUMBER}"
-		def version_dir = "${autopackage_dir}\\${version}"
-		def target_dir = "${version_dir}\\${rs_schema_name}"
+		def version_dir = "${parameters.packageDir}\\${version}"
+		def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 		new File(target_dir).mkdirs()
 
 		def scripts = []
@@ -64,9 +40,9 @@ def prepPackageFromGitCommit() {
 }
 
 def createPackage() {
-	bat "java -jar \"${automation_jar_path}\" -Package -ProjectName ${project_name} -IgnoreScriptWarnings y -AuthType ${auth_type} -Server ${dbm_address} -UserName ${user_name} -Password ${auth_token}"
+	bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
 }
 
 def upgradeReleaseSource() {
-	bat "java -jar ${automation_jar_path} -Upgrade -ProjectName ${project_name} -EnvName ${rs_environment_name} -PackageName V.gitcommit.${env.BUILD_NUMBER} -Server ${dbm_address} -AuthType ${auth_type} -UserName ${user_name} -Password ${auth_token}"
+	bat "java -jar \"${parameters.jarPath}\" -Upgrade -ProjectName ${parameters.projectName} -EnvName ${parameters.rsEnvName} -PackageName V.gitcommit.${env.BUILD_NUMBER} -Server ${parameters.server} -AuthType ${parameters.authType} -UserName ${parameters.userName} -Password ${parameters.authToken}"
 }
