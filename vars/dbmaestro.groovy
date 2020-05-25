@@ -4,7 +4,7 @@ import java.io.*
 import java.nio.file.*
 
 @groovy.transform.Field
-def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: ""]
+def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: ""]
 
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
@@ -21,7 +21,7 @@ def prepPackageFromGitCommit() {
 	}
 	
 	if (scriptsForPackage.size() > 0) {
-		def version = "V.gitcommit.${env.BUILD_NUMBER}"
+		def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
 		def version_dir = "${parameters.packageDir}\\${version}"
 		def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 		new File(target_dir).mkdirs()
@@ -44,5 +44,5 @@ def createPackage() {
 }
 
 def upgradeReleaseSource() {
-	bat "java -jar \"${parameters.jarPath}\" -Upgrade -ProjectName ${parameters.projectName} -EnvName ${parameters.rsEnvName} -PackageName V.gitcommit.${env.BUILD_NUMBER} -Server ${parameters.server} -AuthType ${parameters.authType} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	bat "java -jar \"${parameters.jarPath}\" -Upgrade -ProjectName ${parameters.projectName} -EnvName ${parameters.rsEnvName} -PackageName ${parameters.packagePrefix}${env.BUILD_NUMBER} -Server ${parameters.server} -AuthType ${parameters.authType} -UserName ${parameters.userName} -Password ${parameters.authToken}"
 }
