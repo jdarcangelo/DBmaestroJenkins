@@ -8,11 +8,9 @@ def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", use
 
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
-	bat "git diff --name-only HEAD~1..HEAD Database\\*.sql > package.files"
-	stdout = bat([
-           returnStdout: true, 
-           script: "git diff --name-only HEAD~1..HEAD Database\\*.sql"
-       ]).trim().split("\n");
+	//bat "git diff --name-only HEAD~1..HEAD Database\\*.sql > package.files"
+	stdoutLines = bat([returnStdout: true, script: "git diff --name-only HEAD~1..HEAD Database\\*.sql"]).trim().split("\n");
+	/*
 	  print("stdout starts here")
 	  def i = 0
 	  for (line in stdout) {
@@ -26,6 +24,20 @@ def prepPackageFromGitCommit() {
 		  }
 	  }
 	  print("stdout ends here")
+	*/
+	
+	//if (stdoutLines.size() < 2) return
+	
+	fileList = stdoutLines.subList(1, stdoutLines.size()).collect {it}
+	if (fileList.size() < 1) return
+	for (filePath in fileList) {								
+		fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
+		scriptsForPackage.add([ filePath: filePath, modified: fileDate ])
+	}
+	//for (line in stdoutLines.subList(1, stdoutLines.size())) {
+	//}
+	
+	/*
 	packageFiles = new File("${env.WORKSPACE}\\package.files")
 	if (packageFiles.exists()) {
 		def fileList = packageFiles.collect {it}
@@ -36,24 +48,24 @@ def prepPackageFromGitCommit() {
 			}
 		}
 	}
+	*/
 	
-	if (scriptsForPackage.size() > 0) {
-		def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
-		def version_dir = "${parameters.packageDir}\\${version}"
-		def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
-		new File(target_dir).mkdirs()
+	if (scriptsForPackage.size() < 1) return
+	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
+	def version_dir = "${parameters.packageDir}\\${version}"
+	def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
+	new File(target_dir).mkdirs()
 
-		def scripts = []
-		for (item in scriptsForPackage) {
-			scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
-			echo scriptFileName
-			scripts.add([name: scriptFileName])
-			Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
-		}
-		def manifest = new JsonBuilder()
-		manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
-		new File("${version_dir}\\package.json").write(manifest.toPrettyString())
+	def scripts = []
+	for (item in scriptsForPackage) {
+		scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
+		echo scriptFileName
+		scripts.add([name: scriptFileName])
+		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
+	def manifest = new JsonBuilder()
+	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
+	new File("${version_dir}\\package.json").write(manifest.toPrettyString())
 }
 
 def createPackage() {
