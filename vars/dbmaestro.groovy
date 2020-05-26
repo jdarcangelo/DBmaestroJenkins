@@ -9,6 +9,11 @@ def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", use
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
 	bat "git diff --name-only HEAD~1..HEAD Database\\*.sql > package.files"
+	stdout = bat([
+           returnStdout: true, 
+           script: "git diff --name-only HEAD~1..HEAD Database\\*.sql > package.files"
+       ]).trim();
+	  printlf(stdout)
 	packageFiles = new File("${env.WORKSPACE}\\package.files")
 	if (packageFiles.exists()) {
 		def fileList = packageFiles.collect {it}
