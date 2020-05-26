@@ -11,7 +11,7 @@ def prepPackageFromGitCommit() {
 	bat "git diff --name-only HEAD~1..HEAD Database\\*.sql > package.files"
 	stdout = bat([
            returnStdout: true, 
-           script: "git diff --name-only HEAD~1..HEAD Database\\*.sql > package.files"
+           script: "git diff --name-only HEAD~1..HEAD Database\\*.sql"
        ]).trim();
 	  print("stdout starts here")
 	  print(stdout)
