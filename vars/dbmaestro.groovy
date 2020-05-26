@@ -17,7 +17,11 @@ def prepPackageFromGitCommit() {
 	  def i = 0
 	  for (line in stdout) {
 		  if (i > 0) {
+			  print("an interesting line")
 			  print(line)
+			  i++
+		  } else {
+			  print("an uninteresting line")
 			  i++
 		  }
 	  }
