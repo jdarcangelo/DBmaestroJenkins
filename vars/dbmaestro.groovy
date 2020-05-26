@@ -13,7 +13,9 @@ def prepPackageFromGitCommit() {
            returnStdout: true, 
            script: "git diff --name-only HEAD~1..HEAD Database\\*.sql > package.files"
        ]).trim();
+	  print("stdout starts here")
 	  print(stdout)
+	  print("stdout ends here")
 	packageFiles = new File("${env.WORKSPACE}\\package.files")
 	if (packageFiles.exists()) {
 		def fileList = packageFiles.collect {it}
