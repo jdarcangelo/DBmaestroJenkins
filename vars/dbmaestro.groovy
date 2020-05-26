@@ -12,9 +12,15 @@ def prepPackageFromGitCommit() {
 	stdout = bat([
            returnStdout: true, 
            script: "git diff --name-only HEAD~1..HEAD Database\\*.sql"
-       ]).trim();
+       ]).trim().split("\n");
 	  print("stdout starts here")
-	  print(stdout)
+	  def i = 0
+	  for (line in stdout) {
+		  if (i > 0) {
+			  print(line)
+			  i++
+		  }
+	  }
 	  print("stdout ends here")
 	packageFiles = new File("${env.WORKSPACE}\\package.files")
 	if (packageFiles.exists()) {
