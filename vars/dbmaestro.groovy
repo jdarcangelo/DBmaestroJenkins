@@ -31,7 +31,7 @@ def prepPackageFromGitCommit() {
 	fileList = stdoutLines.collect {it}
 	if (fileList.size() < 2) return
 	for (filePath in fileList) {
-		if (filePath == fileList.first()) next
+		if (filePath == fileList.first()) continue
 		fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
 		scriptsForPackage.add([ filePath: filePath, modified: fileDate ])
 	}
