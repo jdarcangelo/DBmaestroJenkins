@@ -7,64 +7,73 @@ import java.nio.file.*
 def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: ""]
 
 def prepPackageFromGitCommit() {
-	def scriptsForPackage = []
-	//bat "git diff --name-only HEAD~1..HEAD Database\\*.sql > package.files"
-	stdoutLines = bat([returnStdout: true, script: "git diff --name-only HEAD~1..HEAD Database\\*.sql"]).trim().split("\n");
-	/*
-	  print("stdout starts here")
-	  def i = 0
-	  for (line in stdout) {
-		  if (i > 0) {
-			  print("an interesting line")
-			  print(line)
-			  i++
-		  } else {
-			  print("an uninteresting line")
-			  i++
-		  }
-	  }
-	  print("stdout ends here")
-	*/
-	
-	//if (stdoutLines.size() < 2) return
-	
+	scriptsForPackage = []
+
+	// Find all the changed sql files since previous commit
+	stdoutLines = bat([returnStdout: true, script: "git diff --name-only HEAD~1..HEAD Database\\*.sql"]).trim().split("\n")
+	// There will be one line per sql file relative to the working dir
 	fileList = stdoutLines.collect {it}
 	if (fileList.size() < 2) return
 	for (filePath in fileList) {
+		// Ignore the first line echo of the git command
 		if (filePath == fileList.first()) continue
 		fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
-		scriptsForPackage.add([ filePath: filePath, modified: fileDate ])
+		scriptsForPackage.add([ filePath: filePath, modified: fileDate, commit: [:] ])
 	}
-	//for (line in stdoutLines.subList(1, stdoutLines.size())) {
-	//}
-	
-	/*
-	packageFiles = new File("${env.WORKSPACE}\\package.files")
-	if (packageFiles.exists()) {
-		def fileList = packageFiles.collect {it}
-		if (fileList.size() > 0) {
-			for (filePath in fileList) {								
-				fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
-				scriptsForPackage.add([ filePath: filePath, modified: fileDate ])
-			}
-		}
-	}
-	*/
 	
 	if (scriptsForPackage.size() < 1) return
-	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
-	def version_dir = "${parameters.packageDir}\\${version}"
-	def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
+	
+	// Get the parents of the current HEAD, if two parents, we want to walk all the commits of the merge
+	stdoutLines = bat([returnStdout: true, script: "git log --pretty=%P -n 1"]).trim().split("\n")
+	parentList = stdoutLines.collect {it}
+	if (parentList.size() < 2) return
+	
+	parents = parentList[1].split(" ")
+	cherryCmd = "git cherry -v ${parents[0]} "
+	if (parents.size() > 1) {
+		cherryCmd = cherryCmd + parents[1]
+	}
+	
+	stdoutLines = bat([returnStdout: true, script: cherryCmd]).trim().split("\n")
+	commitLines = stdoutLines.collect {it}
+	for (commitLine in commitLines) {
+		// Ignore the first line echo of the git command
+		if (commitLine == commitLines.first()) continue
+		details = commitLine.split(" ")
+		commitType = details[0]
+		commitHash = details[1]
+		commitDesc = details.skip(2).join(" ")
+		
+		// Get the date of the commit
+		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%cd ${commitHash}"]).trim().split("\n")
+		commitDate = new Date(stdoutLines[1])
+		
+		// Get the committer
+		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%ce ${commitHash}"]).trim().split("\n")
+		commitMail = new Date(stdoutLines[1])
+		
+		// Get sql files changed in the commit
+		stdoutLines = bat([returnStdout: true, script: "git diff --name-only ${commitHash} Database\\*.sql"]).trim().split("\n")
+		for (changedFile in stdoutLines) {
+			if (changedFile == stdoutLines.first()) continue
+			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
+			scriptForPackage.modified = commitDate
+			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitDesc: commitDesc, commitMail: commitMail]
+		}
+	}
+	
+	version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
+	version_dir = "${parameters.packageDir}\\${version}"
+	target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	new File(target_dir).mkdirs()
 
-	def scripts = []
-	for (item in scriptsForPackage) {
+	scripts = []
+	for (item in scriptsForPackage.sort {it.modified} ) {
 		scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
-		echo scriptFileName
-		scripts.add([name: scriptFileName])
+		scripts.add([name: scriptFileName, tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash, item.commit.commitDesc], tagType: "Custom"]]])
 		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
-	def manifest = new JsonBuilder()
+	manifest = new JsonBuilder()
 	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
 	new File("${version_dir}\\package.json").write(manifest.toPrettyString())
 }
