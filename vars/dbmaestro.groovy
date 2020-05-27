@@ -67,9 +67,9 @@ def prepPackageFromGitCommit() {
 		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%%ce ${commitHash}"]).trim().split("\n")
 		commitMail = stdoutLines[1]
 
-		echo "Parsed commit line: ${commitLine}"
-		echo "Commit Hash: ${commitHash}"
-		echo "Commit Desc: ${commitDesc}"
+		//echo "Parsed commit line: ${commitLine}"
+		//echo "Commit Hash: ${commitHash}"
+		//echo "Commit Desc: ${commitDesc}"
 		
 		// Get sql files changed in the commit
 		stdoutLines = bat([returnStdout: true, script: "git diff --name-only ${commitHash} Database\\*.sql"]).trim().split("\n")
@@ -78,10 +78,10 @@ def prepPackageFromGitCommit() {
 			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 			scriptForPackage.modified = commitDate
 			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitDesc: commitDesc, commitMail: commitMail]
-			echo changedFile
-			echo commitHash
-			echo commitDesc
-			echo commitMail
+			//echo changedFile
+			//echo commitHash
+			//echo commitDesc
+			//echo commitMail
 		}
 	}
 	
