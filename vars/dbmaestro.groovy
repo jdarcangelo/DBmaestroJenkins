@@ -15,6 +15,13 @@ def sortScriptsForPackage(List<Map> scriptsForPackage) {
 	return scriptsForPackage.toSorted { a, b -> a.modified.compareTo(b.modified) }
 }
 
+@NonCPS
+def writeManifest(List<Map> scripts, String outputPath) {
+	manifest = new JsonBuilder()
+	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
+	new File(outputPath).write(manifest.toPrettyString())
+}
+
 //@NonCPS
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
@@ -85,10 +92,7 @@ def prepPackageFromGitCommit() {
 		scripts.add([name: scriptFileName])
 		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
-	manifest = new JsonBuilder()
-	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
-	//new File("${version_dir}\\package.json").write(manifest.toPrettyString())
-
+	writeManifest(scripts, "${version_dir}\\package.json")
 }
 
 def createPackage() {
