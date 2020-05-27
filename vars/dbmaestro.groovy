@@ -6,6 +6,15 @@ import java.nio.file.*
 @groovy.transform.Field
 def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: ""]
 
+def execCommand(String script) {
+	return
+}
+
+@NonCPS
+def sortScriptsForPackage(List<Map> scriptsForPackage) {
+	return scriptsForPackage.toSorted { a, b -> a.modified.compareTo(b.modified) }
+}
+
 //@NonCPS
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
@@ -67,9 +76,10 @@ def prepPackageFromGitCommit() {
 	version_dir = "${parameters.packageDir}\\${version}"
 	target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	new File(target_dir).mkdirs()
-/*
+
 	def scripts = []
-	for (item in scriptsForPackage.sort {it.modified} ) {
+	scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
+	for (item in scriptsForPackage) {
 		scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
 		// , tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash, item.commit.commitDesc], tagType: "Custom"]]
 		scripts.add([name: scriptFileName])
@@ -78,7 +88,7 @@ def prepPackageFromGitCommit() {
 	manifest = new JsonBuilder()
 	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
 	new File("${version_dir}\\package.json").write(manifest.toPrettyString())
-*/
+
 }
 
 def createPackage() {
