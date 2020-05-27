@@ -30,6 +30,7 @@ def prepPackageFromGitCommit() {
 		// Ignore the first line echo of the git command
 		if (filePath == fileList.first()) continue
 		fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
+		echo "File (${filePath}) found, last modified ${fileDate}"
 		scriptsForPackage.add([ filePath: filePath, modified: fileDate, commit: [:] ])
 	}
 	
@@ -38,6 +39,7 @@ def prepPackageFromGitCommit() {
 	// Get the parents of the current HEAD, if two parents, we want to walk all the commits of the merge
 	stdoutLines = bat([returnStdout: true, script: "git log --pretty=%%P -n 1"]).trim().split("\n")
 	def parentList = stdoutLines.collect {it}
+	echo "Parent git hashe(s) found: " + parentList.join(" ")
 	if (parentList.size() < 2) return
 	
 	def parents = parentList[1].split(" ")
@@ -45,6 +47,7 @@ def prepPackageFromGitCommit() {
 	if (parents.size() > 1) {
 		cherryCmd = cherryCmd + parents[1]
 	}
+	echo "Cherry finding command: ${cherryCmd}"
 	
 	stdoutLines = bat([returnStdout: true, script: cherryCmd]).trim().split("\n")
 	def commitLines = stdoutLines.collect {it}
@@ -63,6 +66,10 @@ def prepPackageFromGitCommit() {
 		// Get the committer
 		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%%ce ${commitHash}"]).trim().split("\n")
 		commitMail = stdoutLines[1]
+
+		echo "Parsed commit line: ${commitLine}"
+		echo "Commit Hash: ${commitHash}"
+		echo "Commit Desc: ${commitDesc}"
 		
 		// Get sql files changed in the commit
 		stdoutLines = bat([returnStdout: true, script: "git diff --name-only ${commitHash} Database\\*.sql"]).trim().split("\n")
