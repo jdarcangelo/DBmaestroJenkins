@@ -42,7 +42,6 @@ def prepPackageFromGitCommit() {
 		details = commitLine.split(" ")
 		commitType = details[0]
 		commitHash = details[1]
-		commitDesc = details[2..-1].join(" ")
 		
 		// Get the date of the commit
 		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%%cd ${commitHash}"]).trim().split("\n")
@@ -58,7 +57,7 @@ def prepPackageFromGitCommit() {
 			if (changedFile == stdoutLines.first()) continue
 			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 			scriptForPackage.modified = commitDate
-			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitDesc: commitDesc, commitMail: commitMail]
+			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitMail: commitMail]
 		}
 	}
 	
@@ -70,7 +69,7 @@ def prepPackageFromGitCommit() {
 	scripts = []
 	for (item in scriptsForPackage.sort {it.modified} ) {
 		scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
-		scripts.add([name: scriptFileName, tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash, item.commit.commitDesc], tagType: "Custom"]]])
+		scripts.add([name: scriptFileName, tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash], tagType: "Custom"]]])
 		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
 	manifest = new JsonBuilder()
