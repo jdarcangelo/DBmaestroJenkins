@@ -94,7 +94,8 @@ def prepPackageFromGitCommit() {
 	scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
 	for (item in scriptsForPackage) {
 		scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
-		scripts.add([name: scriptFileName, tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash], tagType: "Custom"]]])
+		// , tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash], tagType: "Custom"]]
+		scripts.add([name: scriptFileName])
 		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
 	def manifest = new JsonBuilder()
@@ -103,9 +104,9 @@ def prepPackageFromGitCommit() {
 }
 
 def createPackage() {
-	// bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
 }
 
 def upgradeReleaseSource() {
-	// bat "java -jar \"${parameters.jarPath}\" -Upgrade -ProjectName ${parameters.projectName} -EnvName ${parameters.rsEnvName} -PackageName ${parameters.packagePrefix}${env.BUILD_NUMBER} -Server ${parameters.server} -AuthType ${parameters.authType} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	bat "java -jar \"${parameters.jarPath}\" -Upgrade -ProjectName ${parameters.projectName} -EnvName ${parameters.rsEnvName} -PackageName ${parameters.packagePrefix}${env.BUILD_NUMBER} -Server ${parameters.server} -AuthType ${parameters.authType} -UserName ${parameters.userName} -Password ${parameters.authToken}"
 }
