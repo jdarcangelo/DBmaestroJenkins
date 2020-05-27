@@ -24,7 +24,7 @@ def prepPackageFromGitCommit() {
 	if (scriptsForPackage.size() < 1) return
 	
 	// Get the parents of the current HEAD, if two parents, we want to walk all the commits of the merge
-	stdoutLines = bat([returnStdout: true, script: "git log --pretty=%P -n 1"]).trim().split("\n")
+	stdoutLines = bat([returnStdout: true, script: "git log --pretty=%%P -n 1"]).trim().split("\n")
 	parentList = stdoutLines.collect {it}
 	if (parentList.size() < 2) return
 	
@@ -45,11 +45,11 @@ def prepPackageFromGitCommit() {
 		commitDesc = details.skip(2).join(" ")
 		
 		// Get the date of the commit
-		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%cd ${commitHash}"]).trim().split("\n")
+		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%%cd ${commitHash}"]).trim().split("\n")
 		commitDate = new Date(stdoutLines[1])
 		
 		// Get the committer
-		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%ce ${commitHash}"]).trim().split("\n")
+		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%%ce ${commitHash}"]).trim().split("\n")
 		commitMail = new Date(stdoutLines[1])
 		
 		// Get sql files changed in the commit
