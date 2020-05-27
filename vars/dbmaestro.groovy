@@ -15,21 +15,14 @@ def sortScriptsForPackage(List<Map> scriptsForPackage) {
 	return scriptsForPackage.toSorted { a, b -> a.modified.compareTo(b.modified) }
 }
 
-@NonCPS
-def writeManifest(List<Map> scripts, String outputPath) {
-	manifest = new JsonBuilder()
-	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
-	new File(outputPath).write(manifest.toPrettyString())
-}
-
 //@NonCPS
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
 
 	// Find all the changed sql files since previous commit
-	stdoutLines = bat([returnStdout: true, script: "git diff --name-only HEAD~1..HEAD Database\\*.sql"]).trim().split("\n")
+	def stdoutLines = bat([returnStdout: true, script: "git diff --name-only HEAD~1..HEAD Database\\*.sql"]).trim().split("\n")
 	// There will be one line per sql file relative to the working dir
-	fileList = stdoutLines.collect {it}
+	def fileList = stdoutLines.collect {it}
 	if (fileList.size() < 2) return
 	for (filePath in fileList) {
 		// Ignore the first line echo of the git command
@@ -42,17 +35,17 @@ def prepPackageFromGitCommit() {
 	
 	// Get the parents of the current HEAD, if two parents, we want to walk all the commits of the merge
 	stdoutLines = bat([returnStdout: true, script: "git log --pretty=%%P -n 1"]).trim().split("\n")
-	parentList = stdoutLines.collect {it}
+	def parentList = stdoutLines.collect {it}
 	if (parentList.size() < 2) return
 	
-	parents = parentList[1].split(" ")
-	cherryCmd = "git cherry -v ${parents[0]} "
+	def parents = parentList[1].split(" ")
+	def cherryCmd = "git cherry -v ${parents[0]} "
 	if (parents.size() > 1) {
 		cherryCmd = cherryCmd + parents[1]
 	}
 	
 	stdoutLines = bat([returnStdout: true, script: cherryCmd]).trim().split("\n")
-	commitLines = stdoutLines.collect {it}
+	def commitLines = stdoutLines.collect {it}
 	for (commitLine in commitLines) {
 		// Ignore the first line echo of the git command
 		if (commitLine == commitLines.first()) continue
@@ -79,9 +72,9 @@ def prepPackageFromGitCommit() {
 		}
 	}
 	
-	version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
-	version_dir = "${parameters.packageDir}\\${version}"
-	target_dir = "${version_dir}\\${parameters.rsSchemaName}"
+	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
+	def version_dir = "${parameters.packageDir}\\${version}"
+	def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	new File(target_dir).mkdirs()
 
 	def scripts = []
@@ -92,7 +85,9 @@ def prepPackageFromGitCommit() {
 		scripts.add([name: scriptFileName])
 		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
-	writeManifest(scripts, "${version_dir}\\package.json")
+	def manifest = new JsonBuilder()
+	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
+	new File("${version_dir}\\package.json").write(manifest.toPrettyString())
 }
 
 def createPackage() {
