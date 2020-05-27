@@ -6,7 +6,7 @@ import java.nio.file.*
 @groovy.transform.Field
 def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: ""]
 
-@NonCPS
+//@NonCPS
 def prepPackageFromGitCommit() {
 	scriptsForPackage = []
 
