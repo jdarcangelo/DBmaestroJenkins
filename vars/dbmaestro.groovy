@@ -8,7 +8,7 @@ def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", use
 
 //@NonCPS
 def prepPackageFromGitCommit() {
-	scriptsForPackage = []
+	def scriptsForPackage = []
 
 	// Find all the changed sql files since previous commit
 	stdoutLines = bat([returnStdout: true, script: "git diff --name-only HEAD~1..HEAD Database\\*.sql"]).trim().split("\n")
@@ -68,7 +68,7 @@ def prepPackageFromGitCommit() {
 	target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	new File(target_dir).mkdirs()
 
-	scripts = []
+	def scripts = []
 	for (item in scriptsForPackage.sort {it.modified} ) {
 		scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
 		// , tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash, item.commit.commitDesc], tagType: "Custom"]]
