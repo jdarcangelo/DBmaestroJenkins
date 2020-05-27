@@ -67,7 +67,7 @@ def prepPackageFromGitCommit() {
 	version_dir = "${parameters.packageDir}\\${version}"
 	target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	new File(target_dir).mkdirs()
-
+/*
 	def scripts = []
 	for (item in scriptsForPackage.sort {it.modified} ) {
 		scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
@@ -78,12 +78,13 @@ def prepPackageFromGitCommit() {
 	manifest = new JsonBuilder()
 	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
 	new File("${version_dir}\\package.json").write(manifest.toPrettyString())
+*/
 }
 
 def createPackage() {
-	bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	// bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
 }
 
 def upgradeReleaseSource() {
-	bat "java -jar \"${parameters.jarPath}\" -Upgrade -ProjectName ${parameters.projectName} -EnvName ${parameters.rsEnvName} -PackageName ${parameters.packagePrefix}${env.BUILD_NUMBER} -Server ${parameters.server} -AuthType ${parameters.authType} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	// bat "java -jar \"${parameters.jarPath}\" -Upgrade -ProjectName ${parameters.projectName} -EnvName ${parameters.rsEnvName} -PackageName ${parameters.packagePrefix}${env.BUILD_NUMBER} -Server ${parameters.server} -AuthType ${parameters.authType} -UserName ${parameters.userName} -Password ${parameters.authToken}"
 }
