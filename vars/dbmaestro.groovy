@@ -81,8 +81,7 @@ def prepPackageFromGitCommit() {
 	scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
 	for (item in scriptsForPackage) {
 		scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
-		// , tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash, item.commit.commitDesc], tagType: "Custom"]]
-		scripts.add([name: scriptFileName])
+		scripts.add([name: scriptFileName, tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash, item.commit.commitDesc], tagType: "Custom"]]])
 		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
 	def manifest = new JsonBuilder()
