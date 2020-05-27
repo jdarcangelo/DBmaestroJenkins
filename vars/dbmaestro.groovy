@@ -85,8 +85,8 @@ def prepPackageFromGitCommit() {
 		scripts.add([name: scriptFileName])
 		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
-	//manifest = new JsonBuilder()
-	//manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
+	manifest = new JsonBuilder()
+	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
 	//new File("${version_dir}\\package.json").write(manifest.toPrettyString())
 
 }
