@@ -7,7 +7,9 @@ import java.nio.file.*
 def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: ""]
 
 def execCommand(String script) {
-	return
+	def stdoutLines = bat([returnStdout: true, script: script]).trim().split("\n")
+	def outList = stdoutLines.collect {it}
+	return outList[1..-1]
 }
 
 @NonCPS
@@ -69,6 +71,10 @@ def prepPackageFromGitCommit() {
 			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 			scriptForPackage.modified = commitDate
 			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitDesc: commitDesc, commitMail: commitMail]
+			echo changedFile
+			echo commitHash
+			echo commitDesc
+			echo commitMail
 		}
 	}
 	
@@ -81,7 +87,7 @@ def prepPackageFromGitCommit() {
 	scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
 	for (item in scriptsForPackage) {
 		scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
-		scripts.add([name: scriptFileName, tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash, item.commit.commitDesc], tagType: "Custom"]]])
+		scripts.add([name: scriptFileName, tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash], tagType: "Custom"]]])
 		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
 	def manifest = new JsonBuilder()
