@@ -42,7 +42,7 @@ def prepPackageFromGitCommit() {
 		details = commitLine.split(" ")
 		commitType = details[0]
 		commitHash = details[1]
-		commitDesc = details.skip(2).join(" ")
+		commitDesc = details[2..-1].join(" ")
 		
 		// Get the date of the commit
 		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%%cd ${commitHash}"]).trim().split("\n")
