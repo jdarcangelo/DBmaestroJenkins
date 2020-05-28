@@ -44,7 +44,7 @@ def prepPackageFromGitCommit() {
 	echo "Parent git hash(es) found: ${parentList}"
 	def parents = parentList[0].split(" ")
 	
-	if (parents.size > 1) {
+	if (parents.size() > 1) {
 		def cherryCmd = "git cherry -v ${parents[0]} ${parents[1]}"
 		echo "Commit is result of merge; finding branch history with git cherry command: ${cherryCmd}"
 		def commitLines = execCommand(cherryCmd)
