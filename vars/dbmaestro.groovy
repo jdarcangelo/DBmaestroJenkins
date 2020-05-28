@@ -22,7 +22,8 @@ def findActionableFiles(String commit) {
 	if (fileList.size() < 1) return actionableFiles
 	
 	for (changedFile in fileList) {
-		def changeType, filePath = changedFile.split('\t')
+		def changeType = changedFile.split('\t')[0]
+		def filePath = changedFile.split('\t')[1]
 		echo changeType
 		echo filePath
 		switch (changeType) {
