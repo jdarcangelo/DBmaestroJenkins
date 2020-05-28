@@ -84,8 +84,8 @@ def prepPackageFromGitCommit() {
 		}
 	}	
 	
-	echo "Preparing package ${version}"
 	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
+	echo "Preparing package ${version}"
 	def version_dir = "${parameters.packageDir}\\${version}"
 	def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	new File(target_dir).mkdirs()
