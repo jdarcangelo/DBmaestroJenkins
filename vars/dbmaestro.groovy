@@ -8,8 +8,10 @@ def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", use
 
 // Capture stdout lines, strip first line echo of provided command
 def execCommand(String script) {
-	def stdoutLines = bat([returnStdout: true, script: script]).trim().split("\n")
-	def outList = stdoutLines.collect {it}
+	echo "Executing git command: ${script}"
+	def stdoutLines = bat([returnStdout: true, script: script])
+	echo stdoutLines
+	def outList = stdoutLines.trim().split("\n").collect {it}
 	return outList[1..-1]
 }
 
