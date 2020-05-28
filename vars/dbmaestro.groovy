@@ -48,7 +48,7 @@ def prepPackageFromGitCommit() {
 
 	echo "Finding branch history with git cherry command: ${cherryCmd}"
 	def commitLines = execCommand(cherryCmd)
-	commitLines.each(line -> echo(line))
+	commitLines.each { line -> echo(line) }
 	for (commitLine in commitLines) {
 		def details = commitLine.split(" ")
 		def commitType = details[0]
