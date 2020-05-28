@@ -59,7 +59,7 @@ def prepPackageFromGitCommit() {
 			echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" // ${commitDesc}
 			
 			echo "Finding files associated with commit ${commitHash}"
-			def changedFiles = execCommand("git diff --name-only ${commitHash} Database\\*.sql")
+			def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} Database\\*.sql")
 			for (changedFile in changedFiles) {
 				scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 				scriptForPackage.modified = commitDate
