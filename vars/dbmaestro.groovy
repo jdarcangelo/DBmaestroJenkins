@@ -56,7 +56,7 @@ def prepPackageFromGitCommit() {
 		// def commitDesc = details[2..-1].join(" ")
 		def commitDate = new Date(execCommand("git show --pretty=%%cd ${commitHash}")[0])
 		def commitMail = execCommand("git show --pretty=%%ce ${commitHash}")[0]
-		echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" \\${commitDesc}
+		echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" // ${commitDesc}
 		
 		echo "Finding files associated with commit ${commitHash}"
 		def changedFiles = execCommand("git diff --name-only ${commitHash} Database\\*.sql")
