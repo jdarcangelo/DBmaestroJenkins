@@ -43,32 +43,46 @@ def prepPackageFromGitCommit() {
 
 	echo "Parent git hash(es) found: ${parentList}"
 	def parents = parentList[0].split(" ")
-	def cherryCmd = "git cherry -v ${parents[0]} "
-	if (parents.size() > 1) {
-		cherryCmd = cherryCmd + parents[1]
-	}
+	
+	if (parents.size > 1) {
+		def cherryCmd = "git cherry -v ${parents[0]} ${parents[1]}"
+		echo "Commit is result of merge; finding branch history with git cherry command: ${cherryCmd}"
+		def commitLines = execCommand(cherryCmd)
+		commitLines.each { line -> echo(line) }
+		for (commitLine in commitLines) {
+			def details = commitLine.split(" ")
+			def commitType = details[0]
+			def commitHash = details[1]
+			// def commitDesc = details[2..-1].join(" ")
+			def commitDate = new Date(execCommand("git show --pretty=%%cd ${commitHash}")[0])
+			def commitMail = execCommand("git show --pretty=%%ce ${commitHash}")[0]
+			echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" // ${commitDesc}
+			
+			echo "Finding files associated with commit ${commitHash}"
+			def changedFiles = execCommand("git diff --name-only ${commitHash} Database\\*.sql")
+			for (changedFile in changedFiles) {
+				scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
+				scriptForPackage.modified = commitDate
+				scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitMail: commitMail] // commitDesc: commitDesc, 
+				echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
+			}
+		}
+	} else {
+		echo "Direct commit found; acquiring commit details"
+		def commitType = "+"
+		def commitHash = execCommand("git show --pretty=%%H")[0]
+		def commitDate = new Date(execCommand("git show --pretty=%%cd")[0])
+		def commitMail = execCommand("git show --pretty=%%ce")[0]
 
-	echo "Finding branch history with git cherry command: ${cherryCmd}"
-	def commitLines = execCommand(cherryCmd)
-	commitLines.each { line -> echo(line) }
-	for (commitLine in commitLines) {
-		def details = commitLine.split(" ")
-		def commitType = details[0]
-		def commitHash = details[1]
-		// def commitDesc = details[2..-1].join(" ")
-		def commitDate = new Date(execCommand("git show --pretty=%%cd ${commitHash}")[0])
-		def commitMail = execCommand("git show --pretty=%%ce ${commitHash}")[0]
-		echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" // ${commitDesc}
-		
 		echo "Finding files associated with commit ${commitHash}"
-		def changedFiles = execCommand("git diff --name-only ${commitHash} Database\\*.sql")
+		def changedFiles = execCommand("git diff --name-only Database\\*.sql")
 		for (changedFile in changedFiles) {
 			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 			scriptForPackage.modified = commitDate
 			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitMail: commitMail] // commitDesc: commitDesc, 
 			echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
 		}
-	}
+	}	
 	
 	echo "Preparing package ${version}"
 	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
