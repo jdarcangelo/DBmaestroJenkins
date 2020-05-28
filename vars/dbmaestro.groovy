@@ -75,7 +75,7 @@ def prepPackageFromGitCommit() {
 		def commitMail = execCommand("git show --pretty=%%ce")[0]
 
 		echo "Finding files associated with commit ${commitHash}"
-		def changedFiles = execCommand("git diff --name-only Database\\*.sql")
+		def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD Database\\*.sql")
 		for (changedFile in changedFiles) {
 			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 			scriptForPackage.modified = commitDate
