@@ -11,7 +11,7 @@ def execCommand(String script) {
 	echo "Executing git command: ${script}"
 	def stdoutLines = bat([returnStdout: true, script: script])
 	echo stdoutLines
-	def outList = stdoutLines.trim().split("\n").collect {it.replace("/", "\")}
+	def outList = stdoutLines.trim().split("\n").collect {it.replace("/", "\\")}
 	return outList[1..-1]
 }
 
