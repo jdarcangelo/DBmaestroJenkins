@@ -6,6 +6,7 @@ import java.nio.file.*
 @groovy.transform.Field
 def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: ""]
 
+// Capture stdout lines, strip first line echo of provided command
 def execCommand(String script) {
 	def stdoutLines = bat([returnStdout: true, script: script]).trim().split("\n")
 	def outList = stdoutLines.collect {it}
@@ -22,13 +23,11 @@ def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
 
 	// Find all the changed sql files since previous commit
-	def stdoutLines = bat([returnStdout: true, script: "git diff --name-only HEAD~1..HEAD Database\\*.sql"]).trim().split("\n")
-	// There will be one line per sql file relative to the working dir
-	def fileList = stdoutLines.collect {it}
-	if (fileList.size() < 2) return
+	def fileList = execCommand("git diff --name-only HEAD~1..HEAD Database\\*.sql")
+	echo "gathering sql files from Database directory modified or created in the latest commit"
+	if (fileList.size() < 1) return
+	echo "found " + fileList.size() + " sql files"
 	for (filePath in fileList) {
-		// Ignore the first line echo of the git command
-		if (filePath == fileList.first()) continue
 		fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
 		echo "File (${filePath}) found, last modified ${fileDate}"
 		scriptsForPackage.add([ filePath: filePath, modified: fileDate, commit: [:] ])
