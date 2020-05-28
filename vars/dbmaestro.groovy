@@ -17,15 +17,14 @@ def execCommand(String script) {
 
 def findActionableFiles(String commit) {
 	echo "Finding actionable file changes in ${commit}"
-	def fileList = execCommand("git diff --name-status HEAD~1..HEAD Database\\*.sql")
+	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} Database\\*.sql")
+	/*
 	def actionableFiles = []
 	if (fileList.size() < 1) return actionableFiles
 	
 	for (changedFile in fileList) {
 		def changeType = changedFile.split('\t')[0]
 		def filePath = changedFile.split('\t')[1]
-		echo changeType
-		echo filePath
 		switch (changeType) {
 			case 'D':
 				echo "${filePath} was deleted, skipping..."
@@ -42,6 +41,7 @@ def findActionableFiles(String commit) {
 	}
 	
 	return actionableFiles
+	*/
 }
 
 @NonCPS
