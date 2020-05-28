@@ -53,17 +53,17 @@ def prepPackageFromGitCommit() {
 		def details = commitLine.split(" ")
 		def commitType = details[0]
 		def commitHash = details[1]
-		def commitDesc = details[2..-1].join(" ")
+		// def commitDesc = details[2..-1].join(" ")
 		def commitDate = new Date(execCommand("git show --pretty=%%cd ${commitHash}")[0])
 		def commitMail = execCommand("git show --pretty=%%ce ${commitHash}")[0]
-		echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail} ${commitDesc}"
+		echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" \\${commitDesc}
 		
 		echo "Finding files associated with commit ${commitHash}"
 		def changedFiles = execCommand("git diff --name-only ${commitHash} Database\\*.sql")
 		for (changedFile in changedFiles) {
 			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 			scriptForPackage.modified = commitDate
-			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitDesc: commitDesc, commitMail: commitMail]
+			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitMail: commitMail] // commitDesc: commitDesc, 
 			echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
 		}
 	}
