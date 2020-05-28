@@ -23,6 +23,8 @@ def findActionableFiles(String commit) {
 	
 	for (changedFile in fileList) {
 		def changeType, filePath = changedFile.split('\t')
+		echo changeType
+		echo filePath
 		switch (changeType) {
 			case 'D':
 				echo "${filePath} was deleted, skipping..."
