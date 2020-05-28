@@ -22,9 +22,8 @@ def sortScriptsForPackage(List<Map> scriptsForPackage) {
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
 
-	// Find all the changed sql files since previous commit
-	def fileList = execCommand("git diff --name-only HEAD~1..HEAD Database\\*.sql")
 	echo "gathering sql files from Database directory modified or created in the latest commit"
+	def fileList = execCommand("git diff --name-only HEAD~1..HEAD Database\\*.sql")
 	if (fileList.size() < 1) return
 	echo "found " + fileList.size() + " sql files"
 	for (filePath in fileList) {
@@ -35,71 +34,60 @@ def prepPackageFromGitCommit() {
 	
 	if (scriptsForPackage.size() < 1) return
 	
-	// Get the parents of the current HEAD, if two parents, we want to walk all the commits of the merge
-	stdoutLines = bat([returnStdout: true, script: "git log --pretty=%%P -n 1"]).trim().split("\n")
-	def parentList = stdoutLines.collect {it}
-	echo "Parent git hashe(s) found: " + parentList.join(" ")
-	if (parentList.size() < 2) return
-	
-	def parents = parentList[1].split(" ")
+	// 
+	echo "Getting parents of the current HEAD"
+	def parentList = execCommand("git log --pretty=%%P -n 1")
+	if (parentList.size() < 1) return
+
+	echo "Parent git hash(es) found: ${parentList}"
+	def parents = parentList[0].split(" ")
 	def cherryCmd = "git cherry -v ${parents[0]} "
 	if (parents.size() > 1) {
 		cherryCmd = cherryCmd + parents[1]
 	}
-	echo "Cherry finding command: ${cherryCmd}"
-	
-	stdoutLines = bat([returnStdout: true, script: cherryCmd]).trim().split("\n")
-	def commitLines = stdoutLines.collect {it}
-	for (commitLine in commitLines) {
-		// Ignore the first line echo of the git command
-		if (commitLine == commitLines.first()) continue
-		details = commitLine.split(" ")
-		commitType = details[0]
-		commitHash = details[1]
-		commitDesc = details[2..-1].join(" ")
-		
-		// Get the date of the commit
-		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%%cd ${commitHash}"]).trim().split("\n")
-		commitDate = new Date(stdoutLines[1])
-		
-		// Get the committer
-		stdoutLines = bat([returnStdout: true, script: "git show --pretty=%%ce ${commitHash}"]).trim().split("\n")
-		commitMail = stdoutLines[1]
 
-		//echo "Parsed commit line: ${commitLine}"
-		//echo "Commit Hash: ${commitHash}"
-		//echo "Commit Desc: ${commitDesc}"
+	echo "Finding branch history with git cherry command: ${cherryCmd}"
+	def commitLines = execCommand(cherryCmd)
+	for (commitLine in commitLines) {
+		def details = commitLine.split(" ")
+		def commitType = details[0]
+		def commitHash = details[1]
+		def commitDesc = details[2..-1].join(" ")
+		def commitDate = new Date(execCommand("git show --pretty=%%cd ${commitHash}")[0])
+		def commitMail = execCommand("git show --pretty=%%ce ${commitHash}")[0]
+		echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail} ${commitDesc}"
 		
-		// Get sql files changed in the commit
-		stdoutLines = bat([returnStdout: true, script: "git diff --name-only ${commitHash} Database\\*.sql"]).trim().split("\n")
-		for (changedFile in stdoutLines) {
-			if (changedFile == stdoutLines.first()) continue
+		echo "Finding files associated with commit ${commitHash}"
+		def changedFiles = execCommand("git diff --name-only ${commitHash} Database\\*.sql")
+		for (changedFile in changedFiles) {
 			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 			scriptForPackage.modified = commitDate
 			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitDesc: commitDesc, commitMail: commitMail]
-			//echo changedFile
-			//echo commitHash
-			//echo commitDesc
-			//echo commitMail
+			echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
 		}
 	}
 	
+	echo "Preparing package ${version}"
 	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
 	def version_dir = "${parameters.packageDir}\\${version}"
 	def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	new File(target_dir).mkdirs()
 
 	def scripts = []
-	scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
+	def scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
 	for (item in scriptsForPackage) {
-		scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
+		def scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("/") + 1)
 		// , tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash], tagType: "Custom"]]
 		scripts.add([name: scriptFileName])
+		echo "Added ${item.filePath} to package staging and manifest"
 		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
 	def manifest = new JsonBuilder()
 	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
-	new File("${version_dir}\\package.json").write(manifest.toPrettyString())
+	echo "Generating manifest:"
+	def manifestOutput = manifest.toPrettyString()
+	echo manifestOutput
+	new File("${version_dir}\\package.json").write(manifestOutput)
 }
 
 def createPackage() {
