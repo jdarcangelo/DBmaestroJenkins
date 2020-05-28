@@ -15,6 +15,32 @@ def execCommand(String script) {
 	return outList[1..-1]
 }
 
+def findActionableFiles(String commit) {
+	echo "Finding actionable file changes in ${commit}"
+	def fileList = execCommand("git diff --name-status HEAD~1..HEAD Database\\*.sql")
+	def actionableFiles = []
+	if (fileList.size() < 1) return actionableFiles
+	
+	for (changedFile in fileList) {
+		def changeType, filePath = changedFile.split('\t')
+		switch (changeType) {
+			case 'D':
+				echo "${filePath} was deleted, skipping..."
+				continue
+			case 'M':
+				echo "${filePath} was modified, adding to package..."
+				actionableFiles.add(filePath)
+				break
+			case 'A':
+				echo "${filePath} was added, adding to package..."
+				actionableFiles.add(filePath)
+				break
+		}
+	}
+	
+	return actionableFiles
+}
+
 @NonCPS
 def sortScriptsForPackage(List<Map> scriptsForPackage) {
 	return scriptsForPackage.toSorted { a, b -> a.modified.compareTo(b.modified) }
@@ -25,7 +51,8 @@ def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
 
 	echo "gathering sql files from Database directory modified or created in the latest commit"
-	def fileList = execCommand("git diff --name-only HEAD~1..HEAD Database\\*.sql")
+	def fileList = findActionableFiles("HEAD")
+	//def fileList = execCommand("git diff --name-status HEAD~1..HEAD Database\\*.sql")
 	if (fileList.size() < 1) return
 	echo "found " + fileList.size() + " sql files"
 	for (filePath in fileList) {
@@ -59,7 +86,8 @@ def prepPackageFromGitCommit() {
 			echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" // ${commitDesc}
 			
 			echo "Finding files associated with commit ${commitHash}"
-			def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} Database\\*.sql")
+			def changedFiles = findActionableFiles(commitHash)
+			//def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} Database\\*.sql")
 			for (changedFile in changedFiles) {
 				scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 				scriptForPackage.modified = commitDate
@@ -75,7 +103,8 @@ def prepPackageFromGitCommit() {
 		def commitMail = execCommand("git show --pretty=%%ce")[0]
 
 		echo "Finding files associated with commit ${commitHash}"
-		def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD Database\\*.sql")
+		def changedFiles = findActionableFiles("HEAD")
+		//def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD Database\\*.sql")
 		for (changedFile in changedFiles) {
 			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 			scriptForPackage.modified = commitDate
