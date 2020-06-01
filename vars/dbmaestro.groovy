@@ -125,7 +125,7 @@ def prepPackageFromGitCommit() {
 	def scripts = []
 	scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
 	for (item in scriptsForPackage) {
-		// def scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("\\") + 1)
+		def scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("\\") + 1)
 		// , tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash], tagType: "Custom"]]
 		scripts.add([name: scriptFileName])
 		echo "Added ${item.filePath} to package staging and manifest"
