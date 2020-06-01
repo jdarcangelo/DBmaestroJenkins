@@ -130,11 +130,15 @@ def prepPackageFromGitCommit() {
 		scripts.add([name: scriptFileName])
 		echo "Added ${item.filePath} to package staging and manifest"
 		
+		bat "copy /Y \"${env.WORKSPACE}\\${item.filePath}\" \"${target_dir}\""
+		
+		/*
 		def sourceFile = Paths.get("${env.WORKSPACE}\\${item.filePath}")
 		def targetDir = Paths.get(target_dir)
 		def targetFile = targetDir.resolve(sourceFile.getFileName())
 		
 		Files.copy(sourceFile, targetFile)
+		*/
 	}
 	def manifest = new JsonBuilder()
 	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
