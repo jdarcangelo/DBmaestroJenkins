@@ -146,7 +146,8 @@ def prepPackageFromGitCommit() {
 	echo "Generating manifest:"
 	def manifestOutput = manifest.toPrettyString()
 	echo manifestOutput
-	new File("${version_dir}\\package.json").write(manifestOutput)
+	new File("${env.WORKSPACE}\\package.json").write(manifestOutput)
+	bat "move \"${env.WORKSPACE}\\package.json\" \"${version_dir}\""
 }
 
 def createPackage() {
