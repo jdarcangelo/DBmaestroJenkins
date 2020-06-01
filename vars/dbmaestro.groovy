@@ -120,7 +120,7 @@ def prepPackageFromGitCommit() {
 	echo "Preparing package ${version}"
 	def version_dir = "${parameters.packageDir}\\${version}"
 	def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
-	new File(target_dir).mkdirs()
+	// new File(target_dir).mkdirs()
 
 	def scripts = []
 	scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
@@ -130,6 +130,7 @@ def prepPackageFromGitCommit() {
 		scripts.add([name: scriptFileName])
 		echo "Added ${item.filePath} to package staging and manifest"
 		
+		bat "mkdir \"${target_dir}\""
 		bat "copy /Y \"${env.WORKSPACE}\\${item.filePath}\" \"${target_dir}\""
 		
 		/*
