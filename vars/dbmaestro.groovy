@@ -129,6 +129,10 @@ def prepPackageFromGitCommit() {
 		// , tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash], tagType: "Custom"]]
 		scripts.add([name: scriptFileName])
 		echo "Added ${item.filePath} to package staging and manifest"
+		echo "${env.WORKSPACE}"
+		echo "${item.filePath}"
+		echo "${target_dir}"
+		echo "${scriptFileName}"
 		Files.copy(Paths.get("${env.WORKSPACE}\\${item.filePath}"), Paths.get("${target_dir}\\${scriptFileName}"))
 	}
 	def manifest = new JsonBuilder()
