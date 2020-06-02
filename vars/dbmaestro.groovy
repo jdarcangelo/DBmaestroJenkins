@@ -49,6 +49,19 @@ def sortScriptsForPackage(List<Map> scriptsForPackage) {
 	return scriptsForPackage.toSorted { a, b -> a.modified.compareTo(b.modified) }
 }
 
+@NonCPS
+def createPackageManifest(List<String> scripts, String target) {
+	def manifest = new JsonBuilder()
+	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
+	echo "Generating manifest:"
+	def manifestOutput = manifest.toPrettyString()
+	echo manifestOutput
+	File manifestFile = new File("${env.WORKSPACE}\\package.json")
+	manifestFile.setWritable(true)
+	manifestFile.write(manifestOutput)
+	bat "move \"${env.WORKSPACE}\\package.json\" \"${target}\""
+}
+
 //@NonCPS
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
@@ -141,15 +154,6 @@ def prepPackageFromGitCommit() {
 		Files.copy(sourceFile, targetFile)
 		*/
 	}
-	def manifest = new JsonBuilder()
-	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
-	echo "Generating manifest:"
-	def manifestOutput = manifest.toPrettyString()
-	echo manifestOutput
-	File manifestFile = new File("${env.WORKSPACE}\\package.json")
-	manifestFile.setWritable(true)
-	manifestFile.write(manifestOutput)
-	bat "move \"${env.WORKSPACE}\\package.json\" \"${version_dir}\""
 }
 
 def createPackage() {
