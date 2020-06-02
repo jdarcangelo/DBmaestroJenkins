@@ -67,9 +67,12 @@ def createPackageManifest(List<String> scripts, String target) {
 	echo "Generating manifest:"
 	def manifestOutput = manifest.toPrettyString()
 	echo manifestOutput
+	writeFile file: 'package.json', text: manifestOutput
+	/*
 	File manifestFile = new File("${env.WORKSPACE}\\package.json")
 	manifestFile.setWritable(true)
 	manifestFile.write(manifestOutput)
+	*/
 	bat "move \"${env.WORKSPACE}\\package.json\" \"${target}\""
 }
 
