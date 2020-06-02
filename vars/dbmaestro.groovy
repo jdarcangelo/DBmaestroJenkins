@@ -50,7 +50,18 @@ def sortScriptsForPackage(List<Map> scriptsForPackage) {
 }
 
 @NonCPS
+def EVTest() {
+	echo "Working dir is ${env.WORKSPACE}"
+	def workspaceDir = new File("${env.WORKSPACE}")
+	workspaceDir.eachFileRecurse() {
+		file -> 
+			println file.getAbsolutePath()
+	}
+}
+
+@NonCPS
 def createPackageManifest(List<String> scripts, String target) {
+	EVTest()
 	def manifest = new JsonBuilder()
 	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
 	echo "Generating manifest:"
