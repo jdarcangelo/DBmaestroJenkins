@@ -61,7 +61,7 @@ def EVTest() {
 
 @NonCPS
 def createPackageManifest(List<String> scripts, String target) {
-	EVTest()
+	//EVTest()
 	def manifest = new JsonBuilder()
 	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
 	echo "Generating manifest:"
