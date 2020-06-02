@@ -168,7 +168,19 @@ def prepPackageFromGitCommit() {
 		Files.copy(sourceFile, targetFile)
 		*/
 	}
-	createPackageManifest(scripts, version_dir)
+	// createPackageManifest(scripts, version_dir)
+	def manifest = new JsonBuilder()
+	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
+	echo "Generating manifest:"
+	def manifestOutput = manifest.toPrettyString()
+	echo manifestOutput
+	writeFile file: 'package.json', text: manifestOutput
+	/*
+	File manifestFile = new File("${env.WORKSPACE}\\package.json")
+	manifestFile.setWritable(true)
+	manifestFile.write(manifestOutput)
+	*/
+	bat "move \"${env.WORKSPACE}\\package.json\" \"${target}\""
 }
 
 def createPackage() {
