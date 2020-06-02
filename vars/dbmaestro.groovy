@@ -154,6 +154,7 @@ def prepPackageFromGitCommit() {
 		Files.copy(sourceFile, targetFile)
 		*/
 	}
+	createPackageManifest(scripts, version_dir)
 }
 
 def createPackage() {
