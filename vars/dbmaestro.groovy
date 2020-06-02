@@ -181,7 +181,7 @@ def prepPackageFromGitCommit() {
 	manifestFile.setWritable(true)
 	manifestFile.write(manifestOutput)
 	*/
-	bat "move \"${env.WORKSPACE}\\package.json\" \"${target}\""
+	bat "move \"${env.WORKSPACE}\\package.json\" \"${version_dir}\""
 }
 
 def createPackage() {
