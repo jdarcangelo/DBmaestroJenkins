@@ -177,4 +177,5 @@ def acquireBearerToken() {
 
 def composePackage() {
 	def bearerToken = acquireBearerToken()
+	echo bearerToken
 }
