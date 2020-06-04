@@ -158,6 +158,7 @@ def acquireBearerToken() {
 	post.setRequestMethod("POST")
 	post.setDoOutput(true)
 	post.setRequestProperty("Content-Type", "application/json")
+	echo message
 	post.getOutputStream().write(message.getBytes("UTF-8"))
 
 	echo "Authorization response code: ${post.responseCode}"
