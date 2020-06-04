@@ -159,7 +159,8 @@ def acquireBearerToken() {
 	post.setDoOutput(true)
 	post.setRequestProperty("Content-Type", "application/json")
 	post.getOutputStream().write(message.getBytes("UTF-8"))
-	
+
+	echo "Authorization response code: ${post.responseCode}"
 	if (post.responseCode.equals(401) || post.responseCode.equals(403)) {
 		echo "Unauthorized. Exiting..."
 		return ""
