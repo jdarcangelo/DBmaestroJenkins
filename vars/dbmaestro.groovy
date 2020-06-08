@@ -2,6 +2,7 @@
 import groovy.json.*
 import java.io.*
 import java.nio.file.*
+import groovyx.net.http.ContentType
 
 @groovy.transform.Field
 def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false]
@@ -148,7 +149,7 @@ def upgradeReleaseSource() {
 def createBearerTokenPayload() {
 	def payload = new JsonBuilder()
 	payload grant_type: "password", username: parameters.wsUserName, password: parameters.wsPassword
-	return payload.toPrettyString()
+	return payload.toString()
 }
 
 def acquireBearerToken() {
@@ -156,10 +157,12 @@ def acquireBearerToken() {
 	def post = new URL(url).openConnection() as HttpURLConnection
 	def message = createBearerTokenPayload()
 	post.setRequestMethod("POST")
+	post.setDoInput(true)
 	post.setDoOutput(true)
 	post.setRequestProperty("Content-Type", "application/json")
 	echo message
-	post.getOutputStream().write(message.getBytes("UTF-8"))
+	post.getOutputStream().write(message)
+	post.flush()
 
 	echo "Authorization response code: ${post.responseCode}"
 	echo "Response: ${post.inputStream.text}"
