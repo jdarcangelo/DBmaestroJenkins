@@ -160,8 +160,9 @@ def acquireBearerToken() {
 	post.setDoOutput(true)
 	post.setRequestProperty("Content-Type", "application/json")
 	echo message
-	post.getOutputStream().write(message)
-	post.flush()
+	OutputStreamWriter writer = new OutputStreamWriter(post.getOutputStream())
+	writer.write(message)
+	writer.flush()
 
 	echo "Authorization response code: ${post.responseCode}"
 	echo "Response: ${post.inputStream.text}"
