@@ -2,6 +2,7 @@
 import groovy.json.*
 import java.io.*
 import java.nio.file.*
+import org.json.*
 
 @groovy.transform.Field
 def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false]
@@ -154,14 +155,20 @@ def createBearerTokenPayload() {
 def acquireBearerToken() {
 	def url = ((parameters.wsUseHttps) ? "https://" : "http://") + parameters.wsURL + "/Security/Token"
 	def post = new URL(url).openConnection() as HttpURLConnection
-	def message = createBearerTokenPayload()
+	//def message = createBearerTokenPayload()
 	post.setRequestMethod("POST")
 	post.setDoInput(true)
 	post.setDoOutput(true)
 	post.setRequestProperty("Content-Type", "application/json")
-	echo message
+	//echo message
+	JSONObject payload = new JSONObject()
+	payload.put("grant_type", "password")
+	payload.put("username", parameters.wsUserName)
+	payload.put("password", parameters.wsPassword)
+	echo payload.toString()
+
 	OutputStreamWriter writer = new OutputStreamWriter(post.getOutputStream())
-	writer.write(message)
+	writer.write(payload.toString())
 	writer.flush()
 
 	echo "Authorization response code: ${post.responseCode}"
