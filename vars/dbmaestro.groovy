@@ -2,7 +2,6 @@
 import groovy.json.*
 import java.io.*
 import java.nio.file.*
-import groovyx.net.http.ContentType
 
 @groovy.transform.Field
 def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false]
