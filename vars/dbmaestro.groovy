@@ -168,7 +168,7 @@ def acquireBearerToken() {
 	echo payload.toString()
 
 	OutputStreamWriter writer = new OutputStreamWriter(post.getOutputStream())
-	writer.write(payload.toString())
+	writer.write(URLEncoder.encode(payload.toString()))
 	writer.flush()
 
 	echo "Authorization response code: ${post.responseCode}"
