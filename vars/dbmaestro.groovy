@@ -3,6 +3,7 @@ import groovy.json.*
 import java.io.*
 import java.nio.file.*
 import org.json.*
+import groovyx.net.http.*
 
 @groovy.transform.Field
 def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false]
@@ -189,6 +190,19 @@ def acquireBearerToken() {
 }
 
 def composePackage() {
-	def bearerToken = acquireBearerToken()
-	echo bearerToken
+	//def bearerToken = acquireBearerToken()
+	//echo bearerToken
+
+	http.request(POST) {
+		uri.path = ((parameters.wsUseHttps) ? "https://" : "http://") + parameters.wsURL + "/Security/Token"
+		requestContentType = ContentType.JSON
+		body = [grant_type: "password", username: parameters.wsUserName, password: parameters.wsPassword]
+		response.success = { resp ->
+			println "Success! ${resp.status}"
+		}
+
+		response.failure = { resp ->
+			println "Request failed with status ${resp.status}"
+		}
+	}
 }
