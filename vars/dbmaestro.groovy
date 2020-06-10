@@ -1,3 +1,5 @@
+
+@Grab('org.apache.httpcomponents:httpclient:4.2.6')
 // vars/dbmaestro.groovy
 import groovy.json.*
 import java.io.*
