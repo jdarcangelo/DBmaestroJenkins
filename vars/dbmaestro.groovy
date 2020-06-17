@@ -20,9 +20,7 @@ def execCommand(String script) {
 
 def findActionableFiles(String commit) {
 	echo "Finding actionable file changes in ${commit}"
-	diffOutput = git diff --name-only --diff-filter=AM "${commit}~1..${commit}" parameters.fileFilter
-	print(diffOutput)
-	// return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} ${fileFilter}")
+	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} ${parameters.fileFilter}")
 }
 
 @NonCPS
