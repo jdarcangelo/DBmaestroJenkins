@@ -7,7 +7,7 @@ import org.json.*
 import groovyx.net.http.*
 
 @groovy.transform.Field
-def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false, useZipPackaging: false, archiveArtifact: false, fileFilter="Database\\*.sql"]
+def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false, useZipPackaging: false, archiveArtifact: false, fileFilter: "Database\\*.sql"]
 
 // Capture stdout lines, strip first line echo of provided command
 def execCommand(String script) {
@@ -20,8 +20,8 @@ def execCommand(String script) {
 
 def findActionableFiles(String commit) {
 	echo "Finding actionable file changes in ${commit}"
-	git diff --name-only --diff-filter=AM "${commit}~1..${commit}" parameters.fileFilter
-	//print(diffOutput)
+	diffOutput = git diff --name-only --diff-filter=AM "${commit}~1..${commit}" parameters.fileFilter
+	print(diffOutput)
 	// return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} ${fileFilter}")
 }
 
