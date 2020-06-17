@@ -1,4 +1,3 @@
-
 @Grab('org.apache.httpcomponents:httpclient:4.2.6')
 // vars/dbmaestro.groovy
 import groovy.json.*
@@ -8,7 +7,7 @@ import org.json.*
 import groovyx.net.http.*
 
 @groovy.transform.Field
-def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false]
+def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false, useZipPackaging: false, archiveArtifact: false, fileFilter: "Database\\*.sql"]
 
 // Capture stdout lines, strip first line echo of provided command
 def execCommand(String script) {
@@ -21,7 +20,7 @@ def execCommand(String script) {
 
 def findActionableFiles(String commit) {
 	echo "Finding actionable file changes in ${commit}"
-	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} Database\\*.sql")
+	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} ${parameters.fileFilter}")
 }
 
 @NonCPS
@@ -42,9 +41,9 @@ def EVTest() {
 
 // Wrapped as noncps because of serialization issues with JsonBuilder
 @NonCPS
-def createPackageManifest(List<String> scripts) {
+def createPackageManifest(String name, List<String> scripts) {
 	def manifest = new JsonBuilder()
-	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
+	manifest name: name, operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
 	echo "Generating manifest:"
 	def manifestOutput = manifest.toPrettyString()
 	return manifestOutput
@@ -56,7 +55,7 @@ def prepPackageFromGitCommit() {
 
 	echo "gathering sql files from Database directory modified or created in the latest commit"
 	def fileList = findActionableFiles("HEAD")
-	//def fileList = execCommand("git diff --name-status HEAD~1..HEAD Database\\*.sql")
+	//def fileList = execCommand("git diff --name-status HEAD~1..HEAD ${fileFilter}")
 	if (fileList.size() < 1) return
 	echo "found " + fileList.size() + " sql files"
 	for (filePath in fileList) {
@@ -91,7 +90,7 @@ def prepPackageFromGitCommit() {
 			
 			echo "Finding files associated with commit ${commitHash}"
 			def changedFiles = findActionableFiles(commitHash)
-			//def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} Database\\*.sql")
+			//def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} ${fileFilter}")
 			for (changedFile in changedFiles) {
 				scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 				scriptForPackage.modified = commitDate
@@ -108,7 +107,7 @@ def prepPackageFromGitCommit() {
 
 		echo "Finding files associated with commit ${commitHash}"
 		def changedFiles = findActionableFiles("HEAD")
-		//def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD Database\\*.sql")
+		//def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD ${fileFilter}")
 		for (changedFile in changedFiles) {
 			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 			scriptForPackage.modified = commitDate
@@ -119,7 +118,8 @@ def prepPackageFromGitCommit() {
 	
 	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
 	echo "Preparing package ${version}"
-	def version_dir = "${parameters.packageDir}\\${version}"
+	def dbm_artifact_dir = "\"${env.WORKSPACE}\"\\dbmartifact"
+	def version_dir = "${dbm_artifact_dir}\\${version}"
 	def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	// new File(target_dir).mkdirs()
 
@@ -134,10 +134,14 @@ def prepPackageFromGitCommit() {
 		bat "mkdir \"${target_dir}\""
 		bat "copy /Y \"${env.WORKSPACE}\\${item.filePath}\" \"${target_dir}\""
 	}
-	def manifestOutput = createPackageManifest(scripts)
+	def manifestOutput = createPackageManifest(version, scripts)
 	echo manifestOutput
-	writeFile file: 'package.json', text: manifestOutput
-	bat "move \"${env.WORKSPACE}\\package.json\" \"${version_dir}\""
+	writeFile file: "package.json", text: manifestOutput
+	if (parameters.useZipPackaging) {
+
+	} else {
+		bat "move \"${env.WORKSPACE}\\package.json\" \"${version_dir}\""
+	}
 }
 
 def createPackage() {
