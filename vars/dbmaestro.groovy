@@ -147,7 +147,7 @@ def prepPackageFromGitCommit() {
 	}
 
 	if (parameters.archiveArtifact) {
-		archiveArtifact artifacts: "\"${version_dir}\\**\\*\""
+		archiveArtifacts artifacts: "\"${version_dir}\\**\\*\""
 	}
 
 	if (parameters.useZipPackaging) {
