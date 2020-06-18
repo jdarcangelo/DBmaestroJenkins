@@ -199,7 +199,7 @@ def acquireBearerToken() {
 def composePackage() {
 	//def bearerToken = acquireBearerToken()
 	//echo bearerToken
-
+/*
 	def http = new HTTPBuilder(((parameters.wsUseHttps) ? "https://" : "http://") + parameters.wsURL + "/Security/Token")
 	http.request(POST) {
 		//uri.path = ((parameters.wsUseHttps) ? "https://" : "http://") + parameters.wsURL + "/Security/Token"
@@ -213,4 +213,5 @@ def composePackage() {
 			println "Request failed with status ${resp.status}"
 		}
 	}
+	*/
 }
