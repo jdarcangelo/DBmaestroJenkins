@@ -119,7 +119,7 @@ def prepPackageFromGitCommit() {
 	
 	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
 	echo "Preparing package ${version}"
-	def dbm_artifact_dir = "\"${env.WORKSPACE}\"\\dbmartifact"
+	def dbm_artifact_dir = "${env.WORKSPACE}\\dbmartifact"
 	def version_dir = "${dbm_artifact_dir}\\${version}"
 	def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	// new File(target_dir).mkdirs()
@@ -137,12 +137,9 @@ def prepPackageFromGitCommit() {
 	}
 	def manifestOutput = createPackageManifest(version, scripts)
 	echo manifestOutput
-	writeFile file: "package.json", text: manifestOutput
-	if (parameters.useZipPackaging) {
+	writeFile file: "\"${version_dir}\\package.json\"", text: manifestOutput
 
-	} else {
-		bat "move \"${env.WORKSPACE}\\package.json\" \"${version_dir}\""
-	}
+	echo 'Tada!'
 }
 
 def createPackage() {
