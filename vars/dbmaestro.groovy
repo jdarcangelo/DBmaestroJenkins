@@ -137,6 +137,7 @@ def prepPackageFromGitCommit() {
 	}
 	def manifestOutput = createPackageManifest(version, scripts)
 	echo manifestOutput
+	echo "writing to \"${version_dir}\\package.json\""
 	writeFile file: "\"${version_dir}\\package.json\"", text: manifestOutput
 
 	echo 'Tada!'
