@@ -146,9 +146,11 @@ def prepPackageFromGitCommit() {
 		writeFile file: "package.json", text: manifestOutput
 	}
 
-	def zipFileName = "${version}.dbmpackage.zip"
-	echo "writing ${zipFileName}"
-	zip archive: parameters.archiveArtifact, zipFile: zipFileName, dir: version_dir
+	dir("\"${env.WORKSPACE}\"") {
+		def zipFileName = "${version}.dbmpackage.zip"
+		echo "writing ${zipFileName}"
+		zip archive: parameters.archiveArtifact, zipFile: zipFileName, dir: version_dir
+	}
 	
 	echo 'Tada!'
 }
