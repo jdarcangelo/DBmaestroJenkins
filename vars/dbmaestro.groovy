@@ -138,8 +138,8 @@ def prepPackageFromGitCommit() {
 	def manifestOutput = createPackageManifest(version, scripts)
 	echo manifestOutput
 	echo "writing to \"${version_dir}\\package.json\""
-	writeFile file: "\"${version_dir}\\package.json\"", text: manifestOutput
-
+	writeFile file: "package.json", text: manifestOutput
+	bat "move \"${env.WORKSPACE}\\package.json\" \"${version_dir}\""
 	echo 'Tada!'
 }
 
