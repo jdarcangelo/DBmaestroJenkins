@@ -149,7 +149,7 @@ def prepPackageFromGitCommit() {
 	dir("\"${env.WORKSPACE}\"") {
 		def zipFileName = "${version}.dbmpackage.zip"
 		echo "writing ${zipFileName}"
-		zip archive: zipFile: zipFileName, dir: version_dir
+		zip zipFile: zipFileName, dir: version_dir
 	}
 	
 	echo 'Tada!'
