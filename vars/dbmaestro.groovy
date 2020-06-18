@@ -150,6 +150,11 @@ def prepPackageFromGitCommit() {
 	echo "writing ${zipFileName}"
 	zip archive: parameters.archiveArtifact, zipFile: zipFileName, dir: version_dir
 	
+	if (!parameters.useZipPackaging) {
+		bat "mkdir \"${parameters.packageDir}\\${version}\""
+		bat "xcopy \"${version_dir}\\*.*\" \"${parameters.packageDir}\\${version}\" /E /I /F /R"
+	}
+
 	echo 'Tada!'
 }
 
