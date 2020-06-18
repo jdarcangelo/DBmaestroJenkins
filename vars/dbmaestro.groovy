@@ -120,7 +120,9 @@ def prepPackageFromGitCommit() {
 	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
 	echo "Preparing package ${version}"
 	def dbm_artifact_dir = "${env.WORKSPACE}\\dbmartifact"
-	dir (dbm_artifact_dir) deleteDir
+	dir (dbm_artifact_dir) {
+		deleteDir
+	} 
 	def version_dir = "${dbm_artifact_dir}\\${version}"
 	def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	// new File(target_dir).mkdirs()
