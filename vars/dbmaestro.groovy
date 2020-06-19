@@ -1,15 +1,21 @@
+
+@Grab('org.apache.httpcomponents:httpclient:4.2.6')
 // vars/dbmaestro.groovy
 import groovy.json.*
 import java.io.*
 import java.nio.file.*
+import org.json.*
+import groovyx.net.http.*
 
 @groovy.transform.Field
-def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: ""]
+def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false, useZipPackaging: false, archiveArtifact: false, fileFilter: "Database\\*.sql"]
 
 // Capture stdout lines, strip first line echo of provided command
 def execCommand(String script) {
 	echo "Executing git command: ${script}"
 	def stdoutLines = bat([returnStdout: true, script: script])
+	if (stdoutLines && stdoutLines.size() == 0)
+		return []
 	echo stdoutLines
 	def outList = stdoutLines.trim().split("\n").collect {it.replace("/", "\\")}
 	return outList[1..-1]
@@ -17,31 +23,7 @@ def execCommand(String script) {
 
 def findActionableFiles(String commit) {
 	echo "Finding actionable file changes in ${commit}"
-	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} Database\\*.sql")
-	/*
-	def actionableFiles = []
-	if (fileList.size() < 1) return actionableFiles
-	
-	for (changedFile in fileList) {
-		def changeType = changedFile.split('\t')[0]
-		def filePath = changedFile.split('\t')[1]
-		switch (changeType) {
-			case 'D':
-				echo "${filePath} was deleted, skipping..."
-				continue
-			case 'M':
-				echo "${filePath} was modified, adding to package..."
-				actionableFiles.add(filePath)
-				break
-			case 'A':
-				echo "${filePath} was added, adding to package..."
-				actionableFiles.add(filePath)
-				break
-		}
-	}
-	
-	return actionableFiles
-	*/
+	def differencingResults = execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} ${parameters.fileFilter}")
 }
 
 @NonCPS
@@ -49,6 +31,7 @@ def sortScriptsForPackage(List<Map> scriptsForPackage) {
 	return scriptsForPackage.toSorted { a, b -> a.modified.compareTo(b.modified) }
 }
 
+// For use in determining issues in the WORKSPACE
 @NonCPS
 def EVTest() {
 	echo "Working dir is ${env.WORKSPACE}"
@@ -59,30 +42,23 @@ def EVTest() {
 	}
 }
 
+// Wrapped as noncps because of serialization issues with JsonBuilder
 @NonCPS
-def createPackageManifest(List<String> scripts) {
-	//EVTest()
+def createPackageManifest(String name, List<String> scripts) {
 	def manifest = new JsonBuilder()
-	manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
+	manifest name: name, operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
 	echo "Generating manifest:"
 	def manifestOutput = manifest.toPrettyString()
 	return manifestOutput
-	//writeFile file: 'package.json', text: manifestOutput
-	/*
-	File manifestFile = new File("${env.WORKSPACE}\\package.json")
-	manifestFile.setWritable(true)
-	manifestFile.write(manifestOutput)
-	*/
-	//bat "move \"${env.WORKSPACE}\\package.json\" \"${target}\""
 }
 
-//@NonCPS
+// Walk git history for direct commit or branch merge and compose package from SQL contents
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = []
 
 	echo "gathering sql files from Database directory modified or created in the latest commit"
 	def fileList = findActionableFiles("HEAD")
-	//def fileList = execCommand("git diff --name-status HEAD~1..HEAD Database\\*.sql")
+	//def fileList = execCommand("git diff --name-status HEAD~1..HEAD ${fileFilter}")
 	if (fileList.size() < 1) return
 	echo "found " + fileList.size() + " sql files"
 	for (filePath in fileList) {
@@ -117,7 +93,7 @@ def prepPackageFromGitCommit() {
 			
 			echo "Finding files associated with commit ${commitHash}"
 			def changedFiles = findActionableFiles(commitHash)
-			//def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} Database\\*.sql")
+			//def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} ${fileFilter}")
 			for (changedFile in changedFiles) {
 				scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 				scriptForPackage.modified = commitDate
@@ -134,7 +110,7 @@ def prepPackageFromGitCommit() {
 
 		echo "Finding files associated with commit ${commitHash}"
 		def changedFiles = findActionableFiles("HEAD")
-		//def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD Database\\*.sql")
+		//def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD ${fileFilter}")
 		for (changedFile in changedFiles) {
 			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 			scriptForPackage.modified = commitDate
@@ -145,7 +121,11 @@ def prepPackageFromGitCommit() {
 	
 	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
 	echo "Preparing package ${version}"
-	def version_dir = "${parameters.packageDir}\\${version}"
+	def dbm_artifact_dir = "${env.WORKSPACE}\\dbmartifact"
+	dir (dbm_artifact_dir) {
+		deleteDir()
+	} 
+	def version_dir = "${dbm_artifact_dir}\\${version}"
 	def target_dir = "${version_dir}\\${parameters.rsSchemaName}"
 	// new File(target_dir).mkdirs()
 
@@ -159,35 +139,104 @@ def prepPackageFromGitCommit() {
 		
 		bat "mkdir \"${target_dir}\""
 		bat "copy /Y \"${env.WORKSPACE}\\${item.filePath}\" \"${target_dir}\""
-		
-		/*
-		def sourceFile = Paths.get("${env.WORKSPACE}\\${item.filePath}")
-		def targetDir = Paths.get(target_dir)
-		def targetFile = targetDir.resolve(sourceFile.getFileName())
-		
-		Files.copy(sourceFile, targetFile)
-		*/
 	}
-	def manifestOutput = createPackageManifest(scripts)
-	
-	//def manifest = new JsonBuilder()
-	//manifest operation: "create", type: "regular", enabled: true, closed: false, tags: [], scripts: scripts
-	//echo "Generating manifest:"
-	//def manifestOutput = manifest.toPrettyString()
+	def manifestOutput = createPackageManifest(version, scripts)
 	echo manifestOutput
-	writeFile file: 'package.json', text: manifestOutput
-	/*
-	File manifestFile = new File("${env.WORKSPACE}\\package.json")
-	manifestFile.setWritable(true)
-	manifestFile.write(manifestOutput)
-	*/
-	bat "move \"${env.WORKSPACE}\\package.json\" \"${version_dir}\""
+
+	dir(version_dir) {
+		echo "writing to \"${version_dir}\\package.json\""
+		writeFile file: "package.json", text: manifestOutput
+	}
+
+	def zipFileName = "${version}.dbmpackage.zip"
+	echo "writing ${zipFileName}"
+	zip archive: parameters.archiveArtifact, zipFile: zipFileName, dir: version_dir
+	
+	if (!parameters.useZipPackaging) {
+		bat "mkdir \"${parameters.packageDir}\\${version}\""
+		bat "xcopy \"${version_dir}\\*.*\" \"${parameters.packageDir}\\${version}\" /E /I /F /R"
+	}
+
+	echo 'Tada!'
 }
 
 def createPackage() {
-	bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	zippedPackagePath = "${env.WORKSPACE}\\${parameters.packagePrefix}${env.BUILD_NUMBER}.dbmpackage.zip"
+	stagedPackagePath = "${parameters.packageDir}\\${parameters.packagePrefix}${env.BUILD_NUMBER}\\package.json"
+	stuffToDo = fileExists zippedPackagePath || fileExists stagedPackagePath
+	if (!stuffToDo) return
+
+	if (!parameters.useZipPackaging) {
+		bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	}
+	else {
+		bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -FilePath ${parameters.packagePrefix}${env.BUILD_NUMBER}.dbmpackage.zip -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	}
 }
 
 def upgradeReleaseSource() {
 	bat "java -jar \"${parameters.jarPath}\" -Upgrade -ProjectName ${parameters.projectName} -EnvName ${parameters.rsEnvName} -PackageName ${parameters.packagePrefix}${env.BUILD_NUMBER} -Server ${parameters.server} -AuthType ${parameters.authType} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+}
+
+@NonCPS
+def createBearerTokenPayload() {
+	def payload = new JsonBuilder()
+	payload grant_type: "password", username: parameters.wsUserName, password: parameters.wsPassword
+	return payload.toString()
+}
+
+def acquireBearerToken() {
+	def url = ((parameters.wsUseHttps) ? "https://" : "http://") + parameters.wsURL + "/Security/Token"
+	def post = new URL(url).openConnection() as HttpURLConnection
+	//def message = createBearerTokenPayload()
+	post.setRequestMethod("POST")
+	post.setDoInput(true)
+	post.setDoOutput(true)
+	post.setRequestProperty("Content-Type", "application/json")
+	//echo message
+	JSONObject payload = new JSONObject()
+	payload.put("grant_type", "password")
+	payload.put("username", parameters.wsUserName)
+	payload.put("password", parameters.wsPassword)
+	echo payload.toString()
+
+	OutputStreamWriter writer = new OutputStreamWriter(post.getOutputStream())
+	writer.write(URLEncoder.encode(payload.toString()))
+	writer.flush()
+
+	echo "Authorization response code: ${post.responseCode}"
+	echo "Response: ${post.inputStream.text}"
+	if (post.responseCode >= 400 && post.responseCode < 500) {
+		echo "Unauthorized. Exiting..."
+		return ""
+	}
+
+	if (!post.responseCode.equals(200)) {
+		echo "Communications failure during authorization"
+		return ""
+	}
+
+	echo "Authorization response: ${post.inputStream.text}"
+
+	return post.inputStream.text
+}
+
+def composePackage() {
+	//def bearerToken = acquireBearerToken()
+	//echo bearerToken
+/*
+	def http = new HTTPBuilder(((parameters.wsUseHttps) ? "https://" : "http://") + parameters.wsURL + "/Security/Token")
+	http.request(POST) {
+		//uri.path = ((parameters.wsUseHttps) ? "https://" : "http://") + parameters.wsURL + "/Security/Token"
+		requestContentType = ContentType.JSON
+		body = [grant_type: "password", username: parameters.wsUserName, password: parameters.wsPassword]
+		response.success = { resp ->
+			println "Success! ${resp.status}"
+		}
+
+		response.failure = { resp ->
+			println "Request failed with status ${resp.status}"
+		}
+	}
+	*/
 }
