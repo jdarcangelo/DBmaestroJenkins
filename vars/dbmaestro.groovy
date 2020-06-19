@@ -16,12 +16,14 @@ def execCommand(String script) {
 	def stdoutLines = bat([returnStdout: true, script: script])
 	echo stdoutLines
 	def outList = stdoutLines.trim().split("\n").collect {it.replace("/", "\\")}
+	if (outList.size() < 1)
+		return
 	return outList[1..-1]
 }
 
 def findActionableFiles(String commit) {
 	echo "Finding actionable file changes in ${commit}"
-	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} ${parameters.fileFilter}")
+	def differencingResults = execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} ${parameters.fileFilter}")
 }
 
 @NonCPS
@@ -159,7 +161,17 @@ def prepPackageFromGitCommit() {
 }
 
 def createPackage() {
-	bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	zippedPackagePath = "${env.WORKSPACE}\\${parameters.packagePrefix}${env.BUILD_NUMBER}.dbmpackage.zip"
+	stagedPackagePath = "${parameters.packageDir}\\${parameters.packagePrefix}${env.BUILD_NUMBER}\\package.json"
+	stuffToDo = fileExists zippedPackagePath || fileExists stagedPackagePath
+	if (!stuffToDo) return
+
+	if (!parameters.useZipPackaging) {
+		bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	}
+	else {
+		bat "java -jar \"${parameters.jarPath}\" -Package -ProjectName ${parameters.projectName} -IgnoreScriptWarnings y -FilePath ${parameters.packagePrefix}${env.BUILD_NUMBER}.dbmpackage.zip -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+	}
 }
 
 def upgradeReleaseSource() {
