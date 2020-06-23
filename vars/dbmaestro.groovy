@@ -18,13 +18,12 @@ def execCommand(String script) {
 		return []
 	echo stdoutLines
 	def outList = stdoutLines.trim().split("\n").collect {it.replace("/", "\\")}
-	echo 'outList: ' + outList
 	return outList[1..-1]
 }
 
 def findActionableFiles(String commit) {
 	echo "Finding actionable file changes in ${commit}"
-	def differencingResults = execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} -- ${parameters.fileFilter}")
+	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} -- ${parameters.fileFilter}")
 }
 
 @NonCPS
