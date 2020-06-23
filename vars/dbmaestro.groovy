@@ -17,7 +17,7 @@ def execCommand(String script) {
 	if (!stdoutLines || stdoutLines.size() == 0)
 		return []
 	echo stdoutLines
-	def outList = stdoutLines.trim().split("\n").collect() // {it.replace("/", "\\")}
+	def outList = stdoutLines.trim().split("\n").collect {it.replace("/", "\\")}
 	return outList[1..-1]
 }
 
@@ -38,7 +38,7 @@ def getPackageHint(String commit) {
 	def fileList = findPackageHintInCommit(commit)
 	if (!fileList || fileList.size() < 1) return returnList
 
-	def inputPackage = new File(fileList[0])
+	def inputPackage = new File("${env.WORKSPACE}\\${fileList[0]}")
 	def packageHint = new JsonSlurper().parseText(inputPackage.text)
 	packageHint.scripts.each { item -> returnList.add(item.name)}
 	return returnList
