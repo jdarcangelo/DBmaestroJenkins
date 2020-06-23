@@ -163,7 +163,16 @@ def prepPackageFromGitCommit() {
 def createPackage() {
 	zippedPackagePath = "${env.WORKSPACE}\\${parameters.packagePrefix}${env.BUILD_NUMBER}.dbmpackage.zip"
 	stagedPackagePath = "${parameters.packageDir}\\${parameters.packagePrefix}${env.BUILD_NUMBER}\\package.json"
-	stuffToDo = fileExists zippedPackagePath || fileExists stagedPackagePath
+	
+	echo "locating ${zippedPackagePath}"
+	zippedPackageExists = fileExists zippedPackagePath
+	echo zippedPackageExists ? "...found" : "...not found"
+	
+	echo "locating ${stagedPackagePath}"
+	stagedPackageExists = fileExists stagedPackagePath
+	echo stagedPackageExists ? "...found" : "...not found"
+	
+	stuffToDo = zippedPackageExists || stagedPackageExists
 	if (!stuffToDo) return
 
 	if (!parameters.useZipPackaging) {
