@@ -157,7 +157,9 @@ def prepPackageFromGitCommit() {
 		scripts.add([name: scriptFileName])
 		echo "Added ${item.filePath} to package staging and manifest"
 		
-		bat "mkdir \"${target_dir}\""
+		def isPrepared = fileExists target_dir
+		if (!isPrepared) 
+			bat "mkdir \"${target_dir}\""
 		bat "copy /Y \"${env.WORKSPACE}\\${item.filePath}\" \"${target_dir}\""
 	}
 	def manifestOutput = createPackageManifest(version, scripts)
