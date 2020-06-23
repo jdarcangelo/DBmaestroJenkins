@@ -59,7 +59,7 @@ def prepPackageFromGitCommit() {
 	echo "gathering sql files from Database directory modified or created in the latest commit"
 	def fileList = findActionableFiles("HEAD")
 	//def fileList = execCommand("git diff --name-status HEAD~1..HEAD ${fileFilter}")
-	if (fileList.size() < 1) return
+	if (fileList && fileList.size() < 1) return
 	echo "found " + fileList.size() + " sql files"
 	for (filePath in fileList) {
 		fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
