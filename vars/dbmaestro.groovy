@@ -32,8 +32,10 @@ def findPackageHintInCommit(String commit) {
 }
 
 def getPackageHint(String commit) {
-	def fileList = findPackageHintInCommit(commit)
 	def returnList = []
+	if (!parameters.packageHintPath || parameters.packageHintPath.size() < 1) return returnList
+
+	def fileList = findPackageHintInCommit(commit)
 	if (!fileList || fileList.size() < 1) return returnList
 
 	def inputPackage = new File(fileList[0])
@@ -71,7 +73,7 @@ def createPackageManifest(String name, List<String> scripts) {
 // Walk git history for direct commit or branch merge and compose package from SQL contents
 def prepPackageFromGitCommit() {
 	def scriptsForPackage = getPackageHint("HEAD")
-	if (scriptForPackage.size() < 1) {
+	if (scriptsForPackage.size() < 1) {
 		echo "gathering sql files from Database directory modified or created in the latest commit"
 		def fileList = findActionableFiles("HEAD")
 		//def fileList = execCommand("git diff --name-status HEAD~1..HEAD ${fileFilter}")
