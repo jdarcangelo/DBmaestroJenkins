@@ -14,7 +14,7 @@ def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", use
 def execCommand(String script) {
 	echo "Executing git command: ${script}"
 	def stdoutLines = bat([returnStdout: true, script: script])
-	if (stdoutLines && stdoutLines.size() == 0)
+	if (stdoutLines || stdoutLines.size() == 0)
 		return []
 	echo stdoutLines
 	def outList = stdoutLines.trim().split("\n").collect {it.replace("/", "\\")}
