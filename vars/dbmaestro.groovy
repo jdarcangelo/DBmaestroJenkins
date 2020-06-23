@@ -18,6 +18,7 @@ def execCommand(String script) {
 		return []
 	echo stdoutLines
 	def outList = stdoutLines.trim().split("\n").collect {it.replace("/", "\\")}
+	echo 'outList: ' + outList
 	return outList[1..-1]
 }
 
