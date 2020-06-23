@@ -8,7 +8,7 @@ import org.json.*
 import groovyx.net.http.*
 
 @groovy.transform.Field
-def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false, useZipPackaging: false, archiveArtifact: false, fileFilter: "Database\\*.sql"]
+def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false, useZipPackaging: false, archiveArtifact: false, fileFilter: "Database\\*.sql", packageHintPath: ""]
 
 // Capture stdout lines, strip first line echo of provided command
 def execCommand(String script) {
@@ -24,6 +24,22 @@ def execCommand(String script) {
 def findActionableFiles(String commit) {
 	echo "Finding actionable file changes in ${commit}"
 	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} -- ${parameters.fileFilter}")
+}
+
+def findPackageHintInCommit(String commit) {
+	echo "Looking for package hint in ${commit}"
+	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} -- ${parameters.packageHintPath}")
+}
+
+def getPackageHint(String commit) {
+	def fileList = findPackageHintInCommit(commit)
+	def returnList = []
+	if (!fileList || fileList.size() < 1) return returnList
+
+	def inputPackage = new File(fileList[0])
+	def packageHint = new JsonSlurper().parseText(inputPackage.text)
+	packageHint.scripts.each { item => returnList.add(item.name)}
+	return returnList
 }
 
 @NonCPS
@@ -54,70 +70,72 @@ def createPackageManifest(String name, List<String> scripts) {
 
 // Walk git history for direct commit or branch merge and compose package from SQL contents
 def prepPackageFromGitCommit() {
-	def scriptsForPackage = []
+	def scriptsForPackage = getPackageHint("HEAD")
+	if (scriptForPackage.size() < 1) {
+		echo "gathering sql files from Database directory modified or created in the latest commit"
+		def fileList = findActionableFiles("HEAD")
+		//def fileList = execCommand("git diff --name-status HEAD~1..HEAD ${fileFilter}")
+		if (!fileList || fileList.size() < 1) return
+		echo "found " + fileList.size() + " sql files"
+		for (filePath in fileList) {
+			fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
+			echo "File (${filePath}) found, last modified ${fileDate}"
+			scriptsForPackage.add([ filePath: filePath, modified: fileDate, commit: [:] ])
+		}
+		
+		if (scriptsForPackage.size() < 1) return
+		
+		echo "Getting parents of the current HEAD"
+		def parentList = execCommand("git log --pretty=%%P -n 1")
+		if (parentList.size() < 1) return
 
-	echo "gathering sql files from Database directory modified or created in the latest commit"
-	def fileList = findActionableFiles("HEAD")
-	//def fileList = execCommand("git diff --name-status HEAD~1..HEAD ${fileFilter}")
-	if (fileList && fileList.size() < 1) return
-	echo "found " + fileList.size() + " sql files"
-	for (filePath in fileList) {
-		fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
-		echo "File (${filePath}) found, last modified ${fileDate}"
-		scriptsForPackage.add([ filePath: filePath, modified: fileDate, commit: [:] ])
-	}
-	
-	if (scriptsForPackage.size() < 1) return
-	
-	// 
-	echo "Getting parents of the current HEAD"
-	def parentList = execCommand("git log --pretty=%%P -n 1")
-	if (parentList.size() < 1) return
+		echo "Parent git hash(es) found: ${parentList}"
+		def parents = parentList[0].split(" ")
+		
+		if (parents.size() > 1) {
+			def cherryCmd = "git cherry -v ${parents[0]} ${parents[1]}"
+			echo "Commit is result of merge; finding branch history with git cherry command: ${cherryCmd}"
+			def commitLines = execCommand(cherryCmd)
+			commitLines.each { line -> echo(line) }
+			for (commitLine in commitLines) {
+				def details = commitLine.split(" ")
+				def commitType = details[0]
+				def commitHash = details[1]
+				// def commitDesc = details[2..-1].join(" ")
+				def commitDate = new Date(execCommand("git show --pretty=%%cd ${commitHash}")[0])
+				def commitMail = execCommand("git show --pretty=%%ce ${commitHash}")[0]
+				echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" // ${commitDesc}
+				
+				echo "Finding files associated with commit ${commitHash}"
+				def changedFiles = findActionableFiles(commitHash)
+				//def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} ${fileFilter}")
+				for (changedFile in changedFiles) {
+					scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
+					scriptForPackage.modified = commitDate
+					scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitMail: commitMail] // commitDesc: commitDesc, 
+					echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
+				}
+			}
+		} else {
+			echo "Direct commit found; acquiring commit details"
+			def commitType = "+"
+			def commitHash = execCommand("git show --pretty=%%H")[0]
+			def commitDate = new Date(execCommand("git show --pretty=%%cd")[0])
+			def commitMail = execCommand("git show --pretty=%%ce")[0]
 
-	echo "Parent git hash(es) found: ${parentList}"
-	def parents = parentList[0].split(" ")
-	
-	if (parents.size() > 1) {
-		def cherryCmd = "git cherry -v ${parents[0]} ${parents[1]}"
-		echo "Commit is result of merge; finding branch history with git cherry command: ${cherryCmd}"
-		def commitLines = execCommand(cherryCmd)
-		commitLines.each { line -> echo(line) }
-		for (commitLine in commitLines) {
-			def details = commitLine.split(" ")
-			def commitType = details[0]
-			def commitHash = details[1]
-			// def commitDesc = details[2..-1].join(" ")
-			def commitDate = new Date(execCommand("git show --pretty=%%cd ${commitHash}")[0])
-			def commitMail = execCommand("git show --pretty=%%ce ${commitHash}")[0]
-			echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" // ${commitDesc}
-			
 			echo "Finding files associated with commit ${commitHash}"
-			def changedFiles = findActionableFiles(commitHash)
-			//def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} ${fileFilter}")
+			def changedFiles = findActionableFiles("HEAD")
+			//def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD ${fileFilter}")
 			for (changedFile in changedFiles) {
 				scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 				scriptForPackage.modified = commitDate
 				scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitMail: commitMail] // commitDesc: commitDesc, 
 				echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
 			}
-		}
+		}	
 	} else {
-		echo "Direct commit found; acquiring commit details"
-		def commitType = "+"
-		def commitHash = execCommand("git show --pretty=%%H")[0]
-		def commitDate = new Date(execCommand("git show --pretty=%%cd")[0])
-		def commitMail = execCommand("git show --pretty=%%ce")[0]
-
-		echo "Finding files associated with commit ${commitHash}"
-		def changedFiles = findActionableFiles("HEAD")
-		//def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD ${fileFilter}")
-		for (changedFile in changedFiles) {
-			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
-			scriptForPackage.modified = commitDate
-			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitMail: commitMail] // commitDesc: commitDesc, 
-			echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
-		}
-	}	
+		echo "found package manifest prepared at ${parameters.packageHintPath}"
+	}
 	
 	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
 	echo "Preparing package ${version}"
