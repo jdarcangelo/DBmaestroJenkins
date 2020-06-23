@@ -134,7 +134,8 @@ def prepPackageFromGitCommit() {
 				scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitMail: commitMail] // commitDesc: commitDesc, 
 				echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
 			}
-		}	
+		}
+		scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
 	} else {
 		echo "found package manifest prepared at ${parameters.packageHintPath}"
 	}
@@ -150,7 +151,6 @@ def prepPackageFromGitCommit() {
 	// new File(target_dir).mkdirs()
 
 	def scripts = []
-	scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
 	for (item in scriptsForPackage) {
 		def scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("\\") + 1)
 		// , tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash], tagType: "Custom"]]
