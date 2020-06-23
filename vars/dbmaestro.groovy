@@ -38,7 +38,7 @@ def getPackageHint(String commit) {
 
 	def inputPackage = new File(fileList[0])
 	def packageHint = new JsonSlurper().parseText(inputPackage.text)
-	packageHint.scripts.each { item => returnList.add(item.name)}
+	packageHint.scripts.each { item -> returnList.add(item.name)}
 	return returnList
 }
 
