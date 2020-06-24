@@ -8,13 +8,13 @@ import org.json.*
 import groovyx.net.http.*
 
 @groovy.transform.Field
-def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false, useZipPackaging: false, archiveArtifact: false, fileFilter: "Database\\*.sql"]
+def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false, useZipPackaging: false, archiveArtifact: false, fileFilter: "Database\\*.sql", packageHintPath: ""]
 
 // Capture stdout lines, strip first line echo of provided command
 def execCommand(String script) {
 	echo "Executing git command: ${script}"
 	def stdoutLines = bat([returnStdout: true, script: script])
-	if (stdoutLines && stdoutLines.size() == 0)
+	if (!stdoutLines || stdoutLines.size() == 0)
 		return []
 	echo stdoutLines
 	def outList = stdoutLines.trim().split("\n").collect {it.replace("/", "\\")}
@@ -23,7 +23,25 @@ def execCommand(String script) {
 
 def findActionableFiles(String commit) {
 	echo "Finding actionable file changes in ${commit}"
-	def differencingResults = execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} ${parameters.fileFilter}")
+	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} -- ${parameters.fileFilter}")
+}
+
+def findPackageHintInCommit(String commit) {
+	echo "Looking for package hint in ${commit}"
+	return execCommand("git diff --name-only --diff-filter=AM ${commit}~1..${commit} -- ${parameters.packageHintPath}")
+}
+
+def getPackageHint(String commit) {
+	def returnList = []
+	if (!parameters.packageHintPath || parameters.packageHintPath.size() < 1) return returnList
+
+	def fileList = findPackageHintInCommit(commit)
+	if (!fileList || fileList.size() < 1) return returnList
+
+	def inputPackage = new File("${env.WORKSPACE}\\${fileList[0]}")
+	def packageHint = new JsonSlurper().parseText(inputPackage.text)
+	packageHint.scripts.each { item -> returnList.add([ filePath: item.name])}
+	return returnList
 }
 
 @NonCPS
@@ -54,46 +72,62 @@ def createPackageManifest(String name, List<String> scripts) {
 
 // Walk git history for direct commit or branch merge and compose package from SQL contents
 def prepPackageFromGitCommit() {
-	def scriptsForPackage = []
+	def scriptsForPackage = getPackageHint("HEAD")
+	if (scriptsForPackage.size() < 1) {
+		echo "gathering sql files from Database directory modified or created in the latest commit"
+		def fileList = findActionableFiles("HEAD")
+		//def fileList = execCommand("git diff --name-status HEAD~1..HEAD ${fileFilter}")
+		if (!fileList || fileList.size() < 1) return
+		echo "found " + fileList.size() + " sql files"
+		for (filePath in fileList) {
+			fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
+			echo "File (${filePath}) found, last modified ${fileDate}"
+			scriptsForPackage.add([ filePath: filePath, modified: fileDate, commit: [:] ])
+		}
+		
+		if (scriptsForPackage.size() < 1) return
+		
+		echo "Getting parents of the current HEAD"
+		def parentList = execCommand("git log --pretty=%%P -n 1")
+		if (parentList.size() < 1) return
 
-	echo "gathering sql files from Database directory modified or created in the latest commit"
-	def fileList = findActionableFiles("HEAD")
-	//def fileList = execCommand("git diff --name-status HEAD~1..HEAD ${fileFilter}")
-	if (fileList.size() < 1) return
-	echo "found " + fileList.size() + " sql files"
-	for (filePath in fileList) {
-		fileDate = new Date(new File("${env.WORKSPACE}\\${filePath}").lastModified())
-		echo "File (${filePath}) found, last modified ${fileDate}"
-		scriptsForPackage.add([ filePath: filePath, modified: fileDate, commit: [:] ])
-	}
-	
-	if (scriptsForPackage.size() < 1) return
-	
-	// 
-	echo "Getting parents of the current HEAD"
-	def parentList = execCommand("git log --pretty=%%P -n 1")
-	if (parentList.size() < 1) return
+		echo "Parent git hash(es) found: ${parentList}"
+		def parents = parentList[0].split(" ")
+		
+		if (parents.size() > 1) {
+			def cherryCmd = "git cherry -v ${parents[0]} ${parents[1]}"
+			echo "Commit is result of merge; finding branch history with git cherry command: ${cherryCmd}"
+			def commitLines = execCommand(cherryCmd)
+			commitLines.each { line -> echo(line) }
+			for (commitLine in commitLines) {
+				def details = commitLine.split(" ")
+				def commitType = details[0]
+				def commitHash = details[1]
+				// def commitDesc = details[2..-1].join(" ")
+				def commitDate = new Date(execCommand("git show --pretty=%%cd ${commitHash}")[0])
+				def commitMail = execCommand("git show --pretty=%%ce ${commitHash}")[0]
+				echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" // ${commitDesc}
+				
+				echo "Finding files associated with commit ${commitHash}"
+				def changedFiles = findActionableFiles(commitHash)
+				//def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} ${fileFilter}")
+				for (changedFile in changedFiles) {
+					scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
+					scriptForPackage.modified = commitDate
+					scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitMail: commitMail] // commitDesc: commitDesc, 
+					echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
+				}
+			}
+		} else {
+			echo "Direct commit found; acquiring commit details"
+			def commitType = "+"
+			def commitHash = execCommand("git show --pretty=%%H")[0]
+			def commitDate = new Date(execCommand("git show --pretty=%%cd")[0])
+			def commitMail = execCommand("git show --pretty=%%ce")[0]
 
-	echo "Parent git hash(es) found: ${parentList}"
-	def parents = parentList[0].split(" ")
-	
-	if (parents.size() > 1) {
-		def cherryCmd = "git cherry -v ${parents[0]} ${parents[1]}"
-		echo "Commit is result of merge; finding branch history with git cherry command: ${cherryCmd}"
-		def commitLines = execCommand(cherryCmd)
-		commitLines.each { line -> echo(line) }
-		for (commitLine in commitLines) {
-			def details = commitLine.split(" ")
-			def commitType = details[0]
-			def commitHash = details[1]
-			// def commitDesc = details[2..-1].join(" ")
-			def commitDate = new Date(execCommand("git show --pretty=%%cd ${commitHash}")[0])
-			def commitMail = execCommand("git show --pretty=%%ce ${commitHash}")[0]
-			echo "Ancestor commit found: ${commitType} ${commitDate} ${commitHash} ${commitMail}" // ${commitDesc}
-			
 			echo "Finding files associated with commit ${commitHash}"
-			def changedFiles = findActionableFiles(commitHash)
-			//def changedFiles = execCommand("git diff --name-only ${commitHash}~1..${commitHash} ${fileFilter}")
+			def changedFiles = findActionableFiles("HEAD")
+			//def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD ${fileFilter}")
 			for (changedFile in changedFiles) {
 				scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
 				scriptForPackage.modified = commitDate
@@ -101,23 +135,10 @@ def prepPackageFromGitCommit() {
 				echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
 			}
 		}
+		scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
 	} else {
-		echo "Direct commit found; acquiring commit details"
-		def commitType = "+"
-		def commitHash = execCommand("git show --pretty=%%H")[0]
-		def commitDate = new Date(execCommand("git show --pretty=%%cd")[0])
-		def commitMail = execCommand("git show --pretty=%%ce")[0]
-
-		echo "Finding files associated with commit ${commitHash}"
-		def changedFiles = findActionableFiles("HEAD")
-		//def changedFiles = execCommand("git diff --name-only HEAD~1..HEAD ${fileFilter}")
-		for (changedFile in changedFiles) {
-			scriptForPackage = scriptsForPackage.find {it.filePath == changedFile}
-			scriptForPackage.modified = commitDate
-			scriptForPackage.commit = [commitType: commitType, commitHash: commitHash, commitMail: commitMail] // commitDesc: commitDesc, 
-			echo "File (${scriptForPackage.filePath}) updated in ${scriptForPackage.commit.commitHash} on ${scriptForPackage.modified} by ${scriptForPackage.commit.commitMail}"
-		}
-	}	
+		echo "found package manifest prepared at ${parameters.packageHintPath}"
+	}
 	
 	def version = "${parameters.packagePrefix}${env.BUILD_NUMBER}"
 	echo "Preparing package ${version}"
@@ -130,14 +151,15 @@ def prepPackageFromGitCommit() {
 	// new File(target_dir).mkdirs()
 
 	def scripts = []
-	scriptsForPackage = sortScriptsForPackage(scriptsForPackage)
 	for (item in scriptsForPackage) {
 		def scriptFileName = item.filePath.substring(item.filePath.lastIndexOf("\\") + 1)
 		// , tags: [[tagNames: [item.commit.commitMail, item.commit.commitHash], tagType: "Custom"]]
 		scripts.add([name: scriptFileName])
 		echo "Added ${item.filePath} to package staging and manifest"
 		
-		bat "mkdir \"${target_dir}\""
+		def isPrepared = fileExists target_dir
+		if (!isPrepared) 
+			bat "mkdir \"${target_dir}\""
 		bat "copy /Y \"${env.WORKSPACE}\\${item.filePath}\" \"${target_dir}\""
 	}
 	def manifestOutput = createPackageManifest(version, scripts)
@@ -163,7 +185,16 @@ def prepPackageFromGitCommit() {
 def createPackage() {
 	zippedPackagePath = "${env.WORKSPACE}\\${parameters.packagePrefix}${env.BUILD_NUMBER}.dbmpackage.zip"
 	stagedPackagePath = "${parameters.packageDir}\\${parameters.packagePrefix}${env.BUILD_NUMBER}\\package.json"
-	stuffToDo = fileExists zippedPackagePath || fileExists stagedPackagePath
+	
+	echo "locating ${zippedPackagePath}"
+	zippedPackageExists = fileExists zippedPackagePath
+	echo zippedPackageExists ? "...found" : "...not found"
+	
+	echo "locating ${stagedPackagePath}"
+	stagedPackageExists = fileExists stagedPackagePath
+	echo stagedPackageExists ? "...found" : "...not found"
+	
+	stuffToDo = zippedPackageExists || stagedPackageExists
 	if (!stuffToDo) return
 
 	if (!parameters.useZipPackaging) {
