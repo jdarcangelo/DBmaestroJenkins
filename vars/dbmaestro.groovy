@@ -286,7 +286,7 @@ def generateDriftDashboard() {
 				bat "java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -SourceEnvName ${environment} -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
 				itsGood = true
 			}
-			catch {}
+			catch(Exception ex) {}
 			def statusColor = itsGood ? 'green' : 'red'
 		
 			reportBuffer << "<td bgcolor=\"${statusColor}\">${environment}</td>"
