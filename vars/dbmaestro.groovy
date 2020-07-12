@@ -10,7 +10,7 @@ import groovyx.net.http.*
 @groovy.transform.Field
 def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", userName: "", authToken: "", server: "", packageDir: "", rsSchemaName: "", packagePrefix: "", \
 				  wsURL: "", wsUserName: "", wsPassword: "", wsUseHttps: false, useZipPackaging: false, archiveArtifact: false, fileFilter: "Database\\*.sql", packageHintPath: "", \
-				  driftDashboard: ["DBMAESTRO_PIPELINE" : ["RS", "QA", "UAT"]]]
+				  driftDashboard: [[name: "DBMAESTRO_PIPELINE" : environments: ["RS", "QA", "UAT"]], [name: "DBMAESTRO_PIPELINE" : environments: ["RS", "QA", "UAT"]]]
 
 // Capture stdout lines, strip first line echo of provided command
 def execCommand(String script) {
@@ -276,31 +276,16 @@ def composePackage() {
 
 def generateDriftDashboard() {
 	def reportBuffer = ''<<''
-	reportBuffer << """<!DOCTYPE html>
-<html>
-	<head>
-		<title>Drift Dashboard - 12/31/2020</title>
-	</head>
-	<body>
-		<h1>Pipeline: ASDFASDF</h1>
-		<font face="Courier New" size="12">
-		<table>
-		  <tr>
-			<td bgcolor="green">Jill</td>
-			<td bgcolor="red">Smith</td>
-			<td bgcolor="red">50</td>
-		  </tr>
-		</table>
-		</font>
-	</body>
-</html>
-"""
+	reportBuffer << "<!DOCTYPE html><html><head><title>Drift Dashboard - 12/31/2020</title></head><body>"
 
-	// def reportBuffer = ''<<''
 	for(pipeline in parameters.driftDashboard) {
-
-
+		reportBuffer << "<h1>Pipeline: ${pipeline.name}</h1><font face=\"Courier New\" size=\"12\"><table><tr>"
+		for(environment in pipeline.environments) {
+			reportBuffer << "<td bgcolor=\"green\">${environment}</td>"
+		}
+		reportBuffer << "</tr></table></font>"
 	}
+	reportBuffer << "</body></html>"
 	if (reportBuffer.size() > 0) {
 		def reportDate = (new Date()).format('M-d-yyyy')
 		def reportFile = "DriftDashboard-${reportDate}-${env.BUILD_NUMBER}.html"
