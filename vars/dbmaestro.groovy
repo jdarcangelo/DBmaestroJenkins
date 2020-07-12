@@ -275,7 +275,8 @@ def composePackage() {
 }
 
 def generateDriftDashboard() {
-	def reportBuffer = """<!DOCTYPE html>
+	def reportBuffer = ''<<''
+	reportBuffer << """<!DOCTYPE html>
 <html>
 	<head>
 		<title>Drift Dashboard - 12/31/2020</title>
