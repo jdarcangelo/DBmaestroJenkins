@@ -296,7 +296,7 @@ def generateDriftDashboard() {
 """
 
 	// def reportBuffer = ''<<''
-	for(pipeline in driftDashboard) {
+	for(pipeline in parameters.driftDashboard) {
 
 
 	}
