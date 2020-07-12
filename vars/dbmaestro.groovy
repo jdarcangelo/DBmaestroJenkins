@@ -281,7 +281,15 @@ def generateDriftDashboard() {
 	for(pipeline in parameters.driftDashboard) {
 		reportBuffer << "<h1>Pipeline: ${pipeline.name}</h1><font face=\"Courier New\" size=\"12\"><table><tr>"
 		for(environment in pipeline.environments) {
-			reportBuffer << "<td bgcolor=\"green\">${environment}</td>"
+			def itsGood = false
+			try {
+				bat "java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -SourceEnvName ${environment} -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+				itsGood = true
+			}
+			catch {}
+			def statusColor = itsGood ? 'green' : 'red'
+		
+			reportBuffer << "<td bgcolor=\"${statusColor}\">${environment}</td>"
 		}
 		reportBuffer << "</tr></table></font>"
 	}
