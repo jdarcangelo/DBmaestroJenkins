@@ -305,7 +305,7 @@ def generateDriftDashboard() {
 		def reportDate = (new Date()).format('M-d-yyyy')
 		def reportFile = "DriftDashboard-${reportDate}-${env.BUILD_NUMBER}.html"
 		echo "Preparing drift dashboard ${reportFile}"
-		writeFile file: reportFile, text: reportBuffer
+		writeFile file: reportFile, text: reportBuffer.toString()
 		archiveArtifacts artifacts: reportFile, fingerprint: true
 	}
 }
