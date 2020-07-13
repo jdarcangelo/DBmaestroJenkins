@@ -278,15 +278,24 @@ def generateDriftDashboard() {
 	def reportBuffer = ''<<''
 	reportBuffer << "<!DOCTYPE html><html><head><title>Drift Dashboard - 12/31/2020</title></head><body>"
 
+	if (parameters.driftDashboard.size() < 1) return
+
+	echo "Generating Drift Dashboard for ${parameters.driftDashboard.size()} pipelines..."
 	for(pipeline in parameters.driftDashboard) {
 		reportBuffer << "<h1>Pipeline: ${pipeline.name}</h1><font face=\"Courier New\" size=\"12\"><table><tr>"
+		echo "Searching for drift in configured environments for ${pipeline.name}"
 		for(environment in pipeline.environments) {
 			def itsGood = false
 			try {
+				echo "Performing Validate on environment ${environment}"
 				bat "java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -SourceEnvName ${environment} -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+				echo "${pipeline.name}.${environment} validated successfully"
 				itsGood = true
 			}
-			catch(Exception ex) {}
+			catch(Exception ex) {
+				echo "${pipeline.name}.${environment} failed validation"
+				echo ex.toString()
+			}
 			def statusColor = itsGood ? 'green' : 'red'
 		
 			reportBuffer << "<td bgcolor=\"${statusColor}\">${environment}</td>"
