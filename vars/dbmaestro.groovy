@@ -295,7 +295,7 @@ def generateDriftDashboard() {
 
 			def statusColor = itsGood ? 'green' : 'red'
 			def statusMessage = itsGood ? "${pipeline.name}.${environment} validated successfully" : "${pipeline.name}.${environment} failed validation"
-			def url = "http://${server}:88"
+			def url = "http://${parameters.server}:88"
 
 			for (line in result) {
 				if (line.contains("[Report]")) {
