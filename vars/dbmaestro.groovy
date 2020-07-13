@@ -302,8 +302,12 @@ def generateDriftDashboard() {
 			def url = "http://${parameters.server}:88"
 
 			for (line in result) {
+				echo "line is: ${line}"
 				if (line.contains("[Report]")) {
+					echo "contains"
 					url = line.substring(line.indexOf("[Report]") + 8)
+				} else {
+					echo "doesn't contain"
 				}
 			}
 
