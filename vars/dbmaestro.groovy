@@ -306,6 +306,7 @@ def generateDriftDashboard() {
 				if (line.contains("Report")) {
 					//echo "contains"
 					url = line.substring(line.indexOf("Report") + 8)
+				}
 				//} else {
 				//	echo "doesn't contain"
 				//}
