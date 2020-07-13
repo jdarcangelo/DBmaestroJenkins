@@ -285,16 +285,20 @@ def generateDriftDashboard() {
 		reportBuffer << "<h1>Pipeline: ${pipeline.name}</h1><font face=\"Courier New\" size=\"12\"><table><tr>"
 		echo "Searching for drift in configured environments for ${pipeline.name}"
 		for(environment in pipeline.environments) {
-			echo "Performing Validate on environment ${environment}"
-			def result = execCommand("java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}")
+			def result = []
+			def itsGood = false
 
-			def itsGood = true
-			for (line in result) {
-				if (line.startsWith("SEVERE")) itsGood = false
+			try {
+				echo "Performing Validate on environment ${environment}"
+				result = execCommand("java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}")
+				echo "${pipeline.name}.${environment} validated successfully"
+				itsGood = true
+			}
+			catch (Exception ex) {
+				echo "${pipeline.name}.${environment} failed validation"
 			}
 
 			def statusColor = itsGood ? 'green' : 'red'
-			def statusMessage = itsGood ? "${pipeline.name}.${environment} validated successfully" : "${pipeline.name}.${environment} failed validation"
 			def url = "http://${parameters.server}:88"
 
 			for (line in result) {
