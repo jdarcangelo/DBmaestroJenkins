@@ -303,9 +303,9 @@ def generateDriftDashboard() {
 
 			for (line in result) {
 				echo "line is: ${line}"
-				if (line.contains("[Report]")) {
+				if (line.contains("Report")) {
 					echo "contains"
-					url = line.substring(line.indexOf("[Report]") + 8)
+					url = line.substring(line.indexOf("Report") + 8)
 				} else {
 					echo "doesn't contain"
 				}
