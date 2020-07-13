@@ -302,13 +302,13 @@ def generateDriftDashboard() {
 			def url = "http://${parameters.server}:88"
 
 			for (line in result) {
-				echo "line is: ${line}"
+				//echo "line is: ${line}"
 				if (line.contains("Report")) {
-					echo "contains"
+					//echo "contains"
 					url = line.substring(line.indexOf("Report") + 8)
-				} else {
-					echo "doesn't contain"
-				}
+				//} else {
+				//	echo "doesn't contain"
+				//}
 			}
 
 			reportBuffer << "<td bgcolor=\"${statusColor}\"><a href=\"${url}\">${environment}</a></td>"
