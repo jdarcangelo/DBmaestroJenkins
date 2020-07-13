@@ -13,13 +13,13 @@ def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", use
 				  driftDashboard: [[name: "DBMAESTRO_PIPELINE", environments: ["RS", "QA", "UAT"]], [name: "DBMAESTRO_PIPELINE", environments: ["RS", "QA", "UAT"]]]]
 
 // Capture stdout lines, strip first line echo of provided command
-def execCommand(String script) {
-	echo "Executing git command: ${script}"
+def execCommand(String script, bool swapSlashes = true) {
+	echo "Executing command: ${script}"
 	def stdoutLines = bat([returnStdout: true, script: script])
 	if (!stdoutLines || stdoutLines.size() == 0)
 		return []
 	echo stdoutLines
-	def outList = stdoutLines.trim().split("\n").collect {it.replace("/", "\\")}
+	def outList = stdoutLines.trim().split("\n").collect {if (swapSlashes) it.replace("/", "\\")}
 	return outList[1..-1]
 }
 
@@ -285,20 +285,25 @@ def generateDriftDashboard() {
 		reportBuffer << "<h1>Pipeline: ${pipeline.name}</h1><font face=\"Courier New\" size=\"12\"><table><tr>"
 		echo "Searching for drift in configured environments for ${pipeline.name}"
 		for(environment in pipeline.environments) {
-			def itsGood = false
-			try {
-				echo "Performing Validate on environment ${environment}"
-				bat "java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
-				echo "${pipeline.name}.${environment} validated successfully"
-				itsGood = true
+			echo "Performing Validate on environment ${environment}"
+			def result = execCommand("java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}")
+
+			def itsGood = true
+			for (line in result) {
+				if (line.startsWith("SEVERE")) itsGood = false
 			}
-			catch(Exception ex) {
-				echo "${pipeline.name}.${environment} failed validation"
-				echo ex.toString()
-			}
+
 			def statusColor = itsGood ? 'green' : 'red'
-		
-			reportBuffer << "<td bgcolor=\"${statusColor}\">${environment}</td>"
+			def statusMessage = itsGood ? "${pipeline.name}.${environment} validated successfully" : "${pipeline.name}.${environment} failed validation"
+			def url = "http://${server}:88"
+
+			for (line in result) {
+				if (line.contains("[Report]")) {
+					url = line.substring(line.indexOf("[Report]") + 8)
+				}
+			}
+
+			reportBuffer << "<td bgcolor=\"${statusColor}\"><a href=\"${url}\">${environment}</a></td>"
 		}
 		reportBuffer << "</tr></table></font>"
 	}
