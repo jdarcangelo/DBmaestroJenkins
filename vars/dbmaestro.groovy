@@ -288,7 +288,7 @@ def generateDriftDashboard() {
 			def itsGood = false
 			try {
 				echo "Performing Validate on environment ${environment}"
-				bat "java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName ${environment} -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
+				bat "java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}"
 				echo "${pipeline.name}.${environment} validated successfully"
 				itsGood = true
 			}
