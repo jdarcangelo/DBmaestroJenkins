@@ -290,7 +290,7 @@ def generateDriftDashboard() {
 
 			try {
 				echo "Performing Validate on environment ${environment}"
-				result = execCommand("java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}")
+				result = execCommand("java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}", false)
 				echo "${pipeline.name}.${environment} validated successfully"
 				itsGood = true
 			}
@@ -302,14 +302,14 @@ def generateDriftDashboard() {
 			def url = "http://${parameters.server}:88"
 
 			for (line in result) {
-				//echo "line is: ${line}"
+				echo "line is: ${line}"
 				if (line.contains("Report")) {
-					//echo "contains"
+					echo "contains"
 					url = line.substring(line.indexOf("Report") + 8)
-				}
-				//} else {
-				//	echo "doesn't contain"
 				//}
+				} else {
+					echo "doesn't contain"
+				}
 			}
 
 			reportBuffer << "<td bgcolor=\"${statusColor}\"><a href=\"${url}\">${environment}</a></td>"
