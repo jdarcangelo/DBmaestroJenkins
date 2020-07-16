@@ -294,7 +294,6 @@ def generateDriftDashboard() {
 			def stdoutLines = new File("${env.WORKSPACE}\\${outFile}").text
 			echo stdoutLines
 			def outList = stdoutLines.trim().split("\n").collect {it}
-			return outList[1..-1]
 
 			def itsGood = false
 			def url = "http://${parameters.server}:88"
