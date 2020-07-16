@@ -287,11 +287,11 @@ def generateDriftDashboard() {
 		for(environment in pipeline.environments) {
 			def result = []
 			def envName = environment.replace(" ", "")
-			def outFile = "${pipeline.name}-${envName}-Validate-${env.BUILD_NUMBER}"
+			def outFile = "${pipeline.name}-${envName}-Validate-${env.BUILD_NUMBER}.txt"
 			def script = "java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken} >> ${outFile}"
 			echo "Executing command: ${script}"
 			bat returnStatus: true, script: script
-			def stdoutLines = new File(outFile).text
+			def stdoutLines = new File("${env.WORKSPACE}\\${outFile}").text
 			echo stdoutLines
 			def outList = stdoutLines.trim().split("\n").collect {it}
 			return outList[1..-1]
