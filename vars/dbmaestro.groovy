@@ -300,7 +300,8 @@ def generateDriftDashboard() {
 
 			def statusColor = itsGood ? 'green' : 'red'
 			def url = "http://${parameters.server}:88"
-
+			
+			echo "result is ${result}"
 			for (line in result) {
 				echo "line is: ${line}"
 				if (line.contains("Report")) {
