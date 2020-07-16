@@ -286,7 +286,8 @@ def generateDriftDashboard() {
 		echo "Searching for drift in configured environments for ${pipeline.name}"
 		for(environment in pipeline.environments) {
 			def result = []
-			def outFile = "${pipeline.name}-${environment}-Validate-${env.BUILD_NUMBER}"
+			def envName = environment.replace(" ", "")
+			def outFile = "${pipeline.name}-${envName}-Validate-${env.BUILD_NUMBER}"
 			def script = "java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken} >> ${outFile}"
 			echo "Executing command: ${script}"
 			bat returnStatus: true, script: script
