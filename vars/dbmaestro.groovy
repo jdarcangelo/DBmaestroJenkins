@@ -296,7 +296,6 @@ def generateDriftDashboard() {
 			return outList[1..-1]
 
 			def itsGood = false
-			def statusColor = itsGood ? 'green' : 'red'
 			def url = "http://${parameters.server}:88"
 
 			for (line in outList) {
