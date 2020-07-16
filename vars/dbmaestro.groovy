@@ -19,7 +19,7 @@ def execCommand(String script, boolean swapSlashes = true) {
 	if (!stdoutLines || stdoutLines.size() == 0)
 		return []
 	echo stdoutLines
-	def outList = stdoutLines.trim().split("\n").collect {if (swapSlashes) it.replace("/", "\\")}
+	def outList = stdoutLines.trim().split("\n").collect {if (swapSlashes) ? it.replace("/", "\\") : it}
 	return outList[1..-1]
 }
 
