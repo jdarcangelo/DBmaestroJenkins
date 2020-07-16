@@ -296,6 +296,7 @@ def generateDriftDashboard() {
 			}
 			catch (Exception ex) {
 				echo "${pipeline.name}.${environment} failed validation"
+				echo ex.toString()
 			}
 
 			def statusColor = itsGood ? 'green' : 'red'
