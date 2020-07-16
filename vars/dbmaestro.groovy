@@ -286,33 +286,28 @@ def generateDriftDashboard() {
 		echo "Searching for drift in configured environments for ${pipeline.name}"
 		for(environment in pipeline.environments) {
 			def result = []
+			def outFile = "${pipeline.name}-${environment}-Validate-${env.BUILD_NUMBER}"
+			def script = "java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken} >> ${outFile}"
+			echo "Executing command: ${script}"
+			bat returnStatus: true, script: script
+			def stdoutLines = new File(outFile).text
+			echo stdoutLines
+			def outList = stdoutLines.trim().split("\n").collect {it}
+			return outList[1..-1]
+
 			def itsGood = false
-
-			try {
-				echo "Performing Validate on environment ${environment}"
-				result = execCommand("java -jar \"${parameters.jarPath}\" -Validate -ProjectName ${pipeline.name} -EnvName \"${environment}\" -PackageName @CurrentVersion -IgnoreScriptWarnings y -AuthType ${parameters.authType} -Server ${parameters.server} -UserName ${parameters.userName} -Password ${parameters.authToken}", false)
-				echo "${pipeline.name}.${environment} validated successfully"
-				itsGood = true
-			}
-			catch (Exception ex) {
-				echo "${pipeline.name}.${environment} failed validation"
-				echo ex.toString()
-			}
-
 			def statusColor = itsGood ? 'green' : 'red'
 			def url = "http://${parameters.server}:88"
-			
-			echo "result is ${result}"
-			for (line in result) {
-				echo "line is: ${line}"
-				if (line.contains("Report")) {
-					echo "contains"
-					url = line.substring(line.indexOf("Report") + 8)
-				//}
-				} else {
-					echo "doesn't contain"
+
+			for (line in outList) {
+				if (line.contains("[Report]")) {
+					url = line.substring(line.indexOf("[Report]") + 8)
+				}
+				if (line.contains("[Job Status]")) {
+					itsGood = line.contains("[Complete]")
 				}
 			}
+			def statusColor = itsGood ? 'green' : 'red'
 
 			reportBuffer << "<td bgcolor=\"${statusColor}\"><a href=\"${url}\">${environment}</a></td>"
 		}
