@@ -20,6 +20,7 @@ def execCommand(String script, boolean swapSlashes = true) {
 		return []
 	echo stdoutLines
 	def outList = stdoutLines.trim().split("\n").collect {swapSlashes ? it.replace("/", "\\") : it}
+	echo outList
 	return outList[1..-1]
 }
 
