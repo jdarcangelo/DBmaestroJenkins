@@ -29,6 +29,7 @@ def execCommand(String script) {
 		return outList
 
 	outList = stdoutLines.trim().split("\n").collect {!parameters.isLinux ? it.replace("/", "\\") : it}
+	echo outList.toString()
 	return outList[1..-1]
 }
 
