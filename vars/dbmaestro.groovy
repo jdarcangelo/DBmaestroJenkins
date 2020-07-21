@@ -13,13 +13,22 @@ def parameters = [jarPath: "", projectName: "", rsEnvName: "", authType: "", use
 				  driftDashboard: [[name: "DBMAESTRO_PIPELINE", environments: ["RS", "QA", "UAT"]], [name: "DBMAESTRO_PIPELINE", environments: ["RS", "QA", "UAT"]]]]
 
 // Capture stdout lines, strip first line echo of provided command
-def execCommand(String script, boolean swapSlashes = true) {
-	echo "Executing command: ${script}"
-	def stdoutLines = bat([returnStdout: true, script: script])
-	if (!stdoutLines || stdoutLines.size() == 0)
-		return []
+def execCommand(String script) {
+	def stdoutLines = ""
+	def outList = []
+	if (!parameters.isLinux) {
+		echo "Executing windows command: ${script}"
+		stdoutLines = bat([returnStdout: true, script: script])
+	} else {
+		echo "Executing linux command: ${script}"
+		stdoutLines = sh([returnStdout: true, script: script])
+	}
 	echo stdoutLines
-	def outList = stdoutLines.trim().split("\n").collect {swapSlashes ? it.replace("/", "\\") : it}
+
+	if (!stdoutLines || stdoutLines.size() == 0)
+		return outList
+
+	outList = stdoutLines.trim().split("\n").collect {!parameters.isLinux ? it.replace("/", "\\") : it}
 	echo outList
 	return outList[1..-1]
 }
