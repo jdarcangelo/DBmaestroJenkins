@@ -305,6 +305,7 @@ def generateDriftDashboard() {
 			def outList = stdoutLines.trim().split("\n").collect {it}
 
 			def itsGood = false
+			def itsBad = false
 			def url = "http://${parameters.server}:88"
 
 			for (line in outList) {
@@ -314,8 +315,11 @@ def generateDriftDashboard() {
 				if (line.contains("[Job Status]")) {
 					itsGood = line.contains("[Complete]")
 				}
+				if (line.contains("[Server Messsage] Failed")) {
+					itsBad = true
+				}
 			}
-			def statusColor = itsGood ? 'green' : 'red'
+			def statusColor = itsBad ? 'red' : itsGood ? 'green' : 'yellow'
 
 			reportBuffer << "<td bgcolor=\"${statusColor}\"><a href=\"${url}\">${environment}</a></td>"
 		}
