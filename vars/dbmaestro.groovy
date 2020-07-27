@@ -284,8 +284,10 @@ def composePackage() {
 }
 
 def generateDriftDashboard() {
+	def reportDate = (new Date()).format('M-d-yyyy')
+	def reportName = "DriftDashboard-${reportDate}-${env.BUILD_NUMBER}"
 	def reportBuffer = ''<<''
-	reportBuffer << "<!DOCTYPE html><html><head><title>Drift Dashboard - 12/31/2020</title></head><body>"
+	reportBuffer << "<!DOCTYPE html><html><head><title>${reportName}</title></head><body>"
 
 	if (parameters.driftDashboard.size() < 1) return
 
@@ -311,12 +313,15 @@ def generateDriftDashboard() {
 			for (line in outList) {
 				if (line.contains("[Report]")) {
 					url = line.substring(line.indexOf("[Report]") + 8)
+					echo "Drift report link found at: ${url}"
 				}
 				if (line.contains("[Job Status]")) {
 					itsGood = line.contains("[Complete]")
+					echo "Successful validation detected"
 				}
-				if (line.contains("[Server Messsage] Failed")) {
+				if (line.contains("[Server Message] Failed")) {
 					itsBad = true
+					echo "Pipeline error detected"
 				}
 			}
 			def statusColor = itsBad ? 'red' : itsGood ? 'green' : 'yellow'
@@ -327,8 +332,7 @@ def generateDriftDashboard() {
 	}
 	reportBuffer << "</body></html>"
 	if (reportBuffer.size() > 0) {
-		def reportDate = (new Date()).format('M-d-yyyy')
-		def reportFile = "DriftDashboard-${reportDate}-${env.BUILD_NUMBER}.html"
+		def reportFile = "${reportName}.html"
 		echo "Preparing drift dashboard ${reportFile}"
 		writeFile file: reportFile, text: reportBuffer.toString()
 		archiveArtifacts artifacts: reportFile, fingerprint: true
