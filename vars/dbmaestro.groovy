@@ -320,7 +320,7 @@ def generateDriftDashboard() {
 
 			for (line in outList) {
 				if (line.contains("[Report]")) {
-					url = line.substring(line.indexOf("[Report]") + 8)
+					url = line.substring(line.indexOf("[Report]") + 9, line.length() - 1)
 					echo "Drift report link found at: ${url}"
 				}
 				if (line.contains("[Job Status]")) {
